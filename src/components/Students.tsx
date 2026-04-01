@@ -93,11 +93,14 @@ export default function Students({ userRole }: { userRole: string | null }) {
     };
   }, [userRole]);
 
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !auth.currentUser) return;
 
     setIsUploading(true);
+    setUploadError(null);
     try {
       const storageRef = ref(storage, `students/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
       await uploadBytes(storageRef, file);
@@ -106,9 +109,15 @@ export default function Students({ userRole }: { userRole: string | null }) {
         ...prev,
         documents: [...prev.documents, { name: file.name, url, type: 'atestado' }]
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading document:", error);
-      alert('Erro ao fazer upload do documento.');
+      if (error.code === 'storage/unauthorized') {
+        setUploadError('Erro de permissão: Verifique se as regras do Firebase Storage permitem o upload.');
+      } else if (error.code === 'storage/retry-limit-exceeded') {
+        setUploadError('Limite de tempo excedido. Verifique sua conexão.');
+      } else {
+        setUploadError(`Erro ao fazer upload: ${error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setIsUploading(false);
     }
@@ -251,7 +260,7 @@ export default function Students({ userRole }: { userRole: string | null }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
                   <button 
                     onClick={() => openEditModal(student)}
                     className="p-2 hover:bg-slate-800 rounded-xl text-blue-400 transition-colors"
@@ -377,15 +386,18 @@ export default function Students({ userRole }: { userRole: string | null }) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Documentos e Atestados</label>
-                    <label className={`cursor-pointer p-2 rounded-lg border border-slate-800 hover:bg-slate-900 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      {isUploading ? <Loader2 size={16} className="animate-spin text-primary" /> : <Upload size={16} className="text-primary" />}
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        onChange={handleFileUpload}
-                        disabled={isUploading}
-                      />
-                    </label>
+                    <div className="flex items-center gap-2">
+                      {uploadError && <span className="text-[10px] text-rose-500 font-bold">{uploadError}</span>}
+                      <label className={`cursor-pointer p-2 rounded-lg border border-slate-800 hover:bg-slate-900 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {isUploading ? <Loader2 size={16} className="animate-spin text-primary" /> : <Upload size={16} className="text-primary" />}
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          onChange={handleFileUpload}
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
                   </div>
                   
                   <div className="flex gap-2">

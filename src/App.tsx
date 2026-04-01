@@ -16,7 +16,7 @@ import Courses from './components/Courses';
 import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import Library from './components/Library';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { LogIn, ShieldCheck, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from './firebase';
 import { collection, query, where, onSnapshot, getDoc, doc, setDoc } from 'firebase/firestore';
@@ -28,6 +28,11 @@ export default function App() {
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [appSettings, setAppSettings] = React.useState<any>(null);
   const [loginError, setLoginError] = React.useState<string | null>(null);
+  const [loginMode, setLoginMode] = React.useState<'login' | 'signup'>('login');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [name, setName] = React.useState('');
+  const [isAuthProcessing, setIsAuthProcessing] = React.useState(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -66,20 +71,54 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoginError(null);
-    const provider = new GoogleAuthProvider();
+    setIsAuthProcessing(true);
     try {
-      await signInWithPopup(auth, provider);
+      const { signInWithEmailAndPassword } = await import('firebase/auth');
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error("Login Error:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        setLoginError("Este domínio não está autorizado no Firebase. Adicione o domínio atual na lista de domínios autorizados no Console do Firebase.");
-      } else if (error.code === 'auth/popup-blocked') {
-        setLoginError("O pop-up de login foi bloqueado pelo seu navegador. Por favor, permita pop-ups para este site.");
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        setLoginError("Email ou senha incorretos.");
       } else {
         setLoginError("Erro ao fazer login: " + (error.message || "Erro desconhecido"));
       }
+    } finally {
+      setIsAuthProcessing(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+    setIsAuthProcessing(true);
+    try {
+      const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName: name });
+      
+      // Create user doc
+      const role = email === 'luis.hen1403@gmail.com' ? 'admin' : 'instructor';
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: email,
+        role: role,
+        name: name
+      });
+      
+      setUserRole(role);
+    } catch (error: any) {
+      console.error("Signup Error:", error);
+      if (error.code === 'auth/email-already-in-use') {
+        setLoginError("Este email já está em uso.");
+      } else if (error.code === 'auth/weak-password') {
+        setLoginError("A senha deve ter pelo menos 6 caracteres.");
+      } else {
+        setLoginError("Erro ao criar conta: " + (error.message || "Erro desconhecido"));
+      }
+    } finally {
+      setIsAuthProcessing(false);
     }
   };
 
@@ -121,19 +160,80 @@ export default function App() {
           
           <div className="space-y-4">
             <div className="text-left space-y-1">
-              <h2 className="text-xl font-bold text-white">Acesso Restrito</h2>
+              <h2 className="text-xl font-bold text-white">
+                {loginMode === 'login' ? 'Acessar Portal' : 'Criar Conta'}
+              </h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Bem-vindo ao portal corporativo. Por favor, utilize suas credenciais autorizadas para prosseguir.
+                {loginMode === 'login' 
+                  ? 'Bem-vindo ao portal corporativo. Por favor, utilize suas credenciais autorizadas para prosseguir.'
+                  : 'Preencha os dados abaixo para solicitar seu acesso ao sistema corporativo.'}
               </p>
             </div>
 
-            <button 
-              onClick={handleLogin}
-              className="w-full btn-corporate-primary py-4 text-lg mt-4"
-            >
-              <LogIn size={24} />
-              Acessar Portal
-            </button>
+            <form onSubmit={loginMode === 'login' ? handleLogin : handleSignup} className="space-y-4 text-left">
+              {loginMode === 'signup' && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                  <input 
+                    required
+                    type="text" 
+                    className="input-corporate w-full"
+                    placeholder="Seu Nome"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+              )}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email Corporativo</label>
+                <input 
+                  required
+                  type="email" 
+                  className="input-corporate w-full"
+                  placeholder="email@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Senha</label>
+                <input 
+                  required
+                  type="password" 
+                  className="input-corporate w-full"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={isAuthProcessing}
+                className="w-full btn-corporate-primary py-4 text-lg mt-4 disabled:opacity-50"
+              >
+                {isAuthProcessing ? (
+                  <Loader2 className="animate-spin" size={24} />
+                ) : (
+                  <>
+                    <LogIn size={24} />
+                    {loginMode === 'login' ? 'Entrar' : 'Cadastrar'}
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="text-center">
+              <button 
+                onClick={() => {
+                  setLoginMode(loginMode === 'login' ? 'signup' : 'login');
+                  setLoginError(null);
+                }}
+                className="text-xs font-bold text-primary uppercase tracking-widest hover:underline"
+              >
+                {loginMode === 'login' ? 'Não tem uma conta? Solicitar acesso' : 'Já tem uma conta? Fazer login'}
+              </button>
+            </div>
 
             {loginError && (
               <motion.div 

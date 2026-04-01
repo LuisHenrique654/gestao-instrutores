@@ -182,7 +182,7 @@ export default function Courses({ userRole }: { userRole: string | null }) {
                     {course.description || 'Sem descrição estratégica definida.'}
                   </p>
                 </button>
-                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="absolute top-3 right-3 flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseForm({ name: course.name, description: course.description || '' }); setIsCourseModalOpen(true); }}
                     className={`p-2 rounded-xl transition-colors ${selectedCourse?.id === course.id ? 'bg-slate-950/10 text-slate-950 hover:bg-slate-950/20' : 'bg-slate-950 border border-slate-800 text-blue-400 hover:bg-slate-800'}`}
@@ -232,7 +232,7 @@ export default function Courses({ userRole }: { userRole: string | null }) {
                       <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-primary shadow-inner">
                         <Layers size={20} />
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
                         <button 
                           onClick={() => { setEditingSubject(subject); setSubjectForm({ name: subject.name, description: subject.description || '', courseId: subject.courseId }); setIsSubjectModalOpen(true); }}
                           className="p-2 hover:bg-slate-800 rounded-xl text-blue-400 transition-colors"

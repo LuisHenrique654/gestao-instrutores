@@ -23,20 +23,8 @@ import {
   Line
 } from 'recharts';
 
-const data = [
-  { name: 'Seg', presenca: 85 },
-  { name: 'Ter', presenca: 92 },
-  { name: 'Qua', presenca: 88 },
-  { name: 'Qui', presenca: 95 },
-  { name: 'Sex', presenca: 90 },
-];
-
-const performanceData = [
-  { name: 'Sem 1', score: 7.5 },
-  { name: 'Sem 2', score: 8.2 },
-  { name: 'Sem 3', score: 7.8 },
-  { name: 'Sem 4', score: 8.5 },
-];
+const data: any[] = [];
+const performanceData: any[] = [];
 
 import { db, auth } from '../firebase';
 import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
