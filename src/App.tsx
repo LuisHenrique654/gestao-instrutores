@@ -123,7 +123,7 @@ export default function App() {
               className="w-full btn-corporate-primary py-4 text-lg mt-4"
             >
               <LogIn size={24} />
-              Entrar com Google
+              Acessar Portal
             </button>
           </div>
 
