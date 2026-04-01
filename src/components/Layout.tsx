@@ -80,9 +80,12 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
               <ShieldCheck className="text-slate-950" size={20} />
             )}
           </div>
-          <h1 className="text-lg font-bold text-white tracking-tight truncate">
-            {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
-          </h1>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-lg font-bold text-white tracking-tight truncate leading-tight">
+              {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
+            </h1>
+            <p className="text-[9px] text-primary font-bold tracking-[0.1em] -mt-0.5">PORTAL DO INSTRUTOR</p>
+          </div>
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -129,9 +132,12 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
                   <ShieldCheck className="text-slate-950" size={20} />
                 )}
               </div>
-              <h1 className="text-xl font-bold text-white tracking-tight truncate">
-                {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
-              </h1>
+              <div className="flex flex-col justify-center overflow-hidden">
+                <h1 className="text-xl font-bold text-white tracking-tight truncate leading-tight">
+                  {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
+                </h1>
+                <p className="text-[10px] text-primary font-bold tracking-[0.2em] mt-0.5">PORTAL DO INSTRUTOR</p>
+              </div>
             </motion.div>
           )}
           <button 
