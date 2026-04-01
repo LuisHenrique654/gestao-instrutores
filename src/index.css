@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FACC15; /* Professional Yellow/Gold */
+  --color-secondary: #0F172A; /* Deep Navy/Slate for a corporate feel */
+  --color-accent: #1E293B; /* Slate-800 */
+  --color-surface: #111827; /* Gray-900 */
+  --color-border: #334155; /* Slate-700 */
+}
+
+@layer base {
+  body {
+    @apply bg-[#020617] text-slate-200 antialiased font-sans;
+  }
+}
+
+.corporate-card {
+  @apply bg-surface border border-border rounded-2xl p-6 shadow-xl shadow-black/40 backdrop-blur-sm transition-all duration-300;
+}
+
+.corporate-card:hover {
+  @apply border-primary/30 shadow-primary/5;
+}
+
+.btn-corporate-primary {
+  @apply bg-primary text-slate-950 font-bold py-2.5 px-5 rounded-xl hover:bg-yellow-300 transition-all active:scale-95 shadow-lg shadow-primary/10 flex items-center justify-center gap-2;
+}
+
+.btn-corporate-outline {
+  @apply border border-border text-slate-300 font-semibold py-2.5 px-5 rounded-xl hover:bg-accent hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2;
+}
+
+.input-corporate {
+  @apply bg-slate-900/50 border border-border text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-600;
+}
+
+.sidebar-item {
+  @apply flex items-center p-3 rounded-xl transition-all duration-200;
+}
+
+.sidebar-item-active {
+  @apply bg-primary/10 text-primary border border-primary/20 font-semibold;
+}
+
+.sidebar-item-inactive {
+  @apply text-slate-400 hover:bg-slate-800/50 hover:text-slate-100;
+}

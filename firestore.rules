@@ -1,0 +1,206 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // All collections now include 'instructorId' for isolation.
+    //
+    // Collection: courses
+    // Fields: instructorId (string), name (string), description (string)
+    //
+    // Collection: subjects
+    // Fields: instructorId (string), courseId (string), name (string), description (string)
+    //
+    // Collection: students
+    // Fields: instructorId (string), name (string), email (string), phone (string), photoUrl (string), courseIds (list), documents (list)
+    //
+    // Collection: classes
+    // Fields: instructorId (string), subjectId (string), date (string), content (string), status (string)
+    //
+    // Collection: attendance
+    // Fields: instructorId (string), classId (string), studentId (string), status (string), date (string)
+    //
+    // Collection: reports
+    // Fields: instructorId (string), studentId (string), subjectId (string), date (string), performance (number), behavior (string), technical (string), evolution (string)
+    //
+    // Collection: grades
+    // Fields: instructorId (string), studentId (string), subjectId (string), grade (number), date (string)
+    //
+    // Collection: library
+    // Fields: instructorId (string), title (string), description (string), fileUrl (string), type (string)
+    //
+    // Collection: settings
+    // Fields: instructorId (string), companyLogoUrl (string), companyName (string)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return isAuthenticated() && data.instructorId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "luis.hen1403@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+        request.resource.data[field].size() >= minLen &&
+        request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidCourse(data) {
+      return hasRequiredFields(['instructorId', 'name']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             validStringLength('name', 1, 100);
+    }
+
+    function isValidSubject(data) {
+      return hasRequiredFields(['instructorId', 'courseId', 'name']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             validStringLength('name', 1, 100);
+    }
+
+    function isValidStudent(data) {
+      return hasRequiredFields(['instructorId', 'name']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             validStringLength('name', 1, 100);
+    }
+
+    function isValidClass(data) {
+      return hasRequiredFields(['instructorId', 'subjectId', 'date', 'status']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             isValidDateString(data.date);
+    }
+
+    function isValidAttendance(data) {
+      return hasRequiredFields(['instructorId', 'classId', 'studentId', 'status', 'date']) &&
+             (data.instructorId == request.auth.uid || isAdmin());
+    }
+
+    function isValidReport(data) {
+      return hasRequiredFields(['instructorId', 'studentId', 'subjectId', 'date']) &&
+             (data.instructorId == request.auth.uid || isAdmin());
+    }
+
+    function isValidGrade(data) {
+      return hasRequiredFields(['instructorId', 'studentId', 'subjectId', 'grade', 'date']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             data.grade is number;
+    }
+
+    function isValidLibraryItem(data) {
+      return hasRequiredFields(['instructorId', 'title', 'fileUrl']) &&
+             (data.instructorId == request.auth.uid || isAdmin());
+    }
+
+    function isValidSettings(data) {
+      return hasRequiredFields(['instructorId']) &&
+             (data.instructorId == request.auth.uid || isAdmin());
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /courses/{courseId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidCourse(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidCourse(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /subjects/{subjectId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidSubject(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidSubject(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /students/{studentId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidStudent(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidStudent(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /classes/{classId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidClass(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidClass(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidAttendance(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidAttendance(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidReport(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidReport(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidGrade(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidGrade(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /library/{itemId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidLibraryItem(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidLibraryItem(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    match /settings/{settingId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidSettings(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidSettings(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

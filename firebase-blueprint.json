@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "Course": {
+      "title": "Course",
+      "description": "A course offered by the instructor.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the course" },
+        "description": { "type": "string", "description": "Description of the course" }
+      },
+      "required": ["name"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "A subject within a course.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string", "description": "ID of the parent course" },
+        "name": { "type": "string", "description": "Name of the subject" },
+        "description": { "type": "string", "description": "Description of the subject" }
+      },
+      "required": ["courseId", "name"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "A student enrolled in courses.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the student" },
+        "email": { "type": "string", "description": "Email contact" },
+        "phone": { "type": "string", "description": "Phone contact" },
+        "photoUrl": { "type": "string", "description": "URL to student photo" },
+        "courseIds": { "type": "array", "items": { "type": "string" }, "description": "IDs of courses the student is enrolled in" }
+      },
+      "required": ["name"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A specific class session.",
+      "type": "object",
+      "properties": {
+        "subjectId": { "type": "string", "description": "ID of the subject" },
+        "date": { "type": "string", "format": "date-time", "description": "Date and time of the class" },
+        "content": { "type": "string", "description": "Content planned or covered" },
+        "status": { "type": "string", "enum": ["planned", "completed"], "description": "Status of the class" }
+      },
+      "required": ["subjectId", "date", "status"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Attendance record for a student in a class.",
+      "type": "object",
+      "properties": {
+        "classId": { "type": "string", "description": "ID of the class" },
+        "studentId": { "type": "string", "description": "ID of the student" },
+        "status": { "type": "string", "enum": ["present", "absent", "justified"], "description": "Attendance status" },
+        "date": { "type": "string", "format": "date-time", "description": "Date of the record" }
+      },
+      "required": ["classId", "studentId", "status", "date"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Individual performance report for a student.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "description": "ID of the student" },
+        "subjectId": { "type": "string", "description": "ID of the subject" },
+        "date": { "type": "string", "format": "date-time", "description": "Date of the report" },
+        "performance": { "type": "number", "description": "Performance score (e.g., 0-10)" },
+        "behavior": { "type": "string", "description": "Behavioral observations" },
+        "technical": { "type": "string", "description": "Technical skills evaluation" },
+        "evolution": { "type": "string", "description": "Evolution notes" }
+      },
+      "required": ["studentId", "subjectId", "date"]
+    }
+  },
+  "firestore": {
+    "/courses/{courseId}": { "schema": "Course", "description": "Courses collection" },
+    "/subjects/{subjectId}": { "schema": "Subject", "description": "Subjects collection" },
+    "/students/{studentId}": { "schema": "Student", "description": "Students collection" },
+    "/classes/{classId}": { "schema": "Class", "description": "Classes collection" },
+    "/attendance/{attendanceId}": { "schema": "Attendance", "description": "Attendance records" },
+    "/reports/{reportId}": { "schema": "Report", "description": "Student reports" }
+  }
+}
