@@ -27,6 +27,7 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [appSettings, setAppSettings] = React.useState<any>(null);
+  const [loginError, setLoginError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -66,11 +67,19 @@ export default function App() {
   }, []);
 
   const handleLogin = async () => {
+    setLoginError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        setLoginError("Este domínio não está autorizado no Firebase. Adicione o domínio atual na lista de domínios autorizados no Console do Firebase.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setLoginError("O pop-up de login foi bloqueado pelo seu navegador. Por favor, permita pop-ups para este site.");
+      } else {
+        setLoginError("Erro ao fazer login: " + (error.message || "Erro desconhecido"));
+      }
     }
   };
 
@@ -125,6 +134,16 @@ export default function App() {
               <LogIn size={24} />
               Acessar Portal
             </button>
+
+            {loginError && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-left leading-relaxed"
+              >
+                {loginError}
+              </motion.div>
+            )}
           </div>
 
           <div className="pt-6 border-t border-slate-800">
