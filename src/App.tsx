@@ -16,7 +16,7 @@ import Courses from './components/Courses';
 import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import Library from './components/Library';
-import { LogIn, ShieldCheck, Loader2 } from 'lucide-react';
+import { LogIn, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from './firebase';
 import { collection, query, where, onSnapshot, getDoc, doc, setDoc } from 'firebase/firestore';
@@ -34,6 +34,7 @@ export default function App() {
   const [name, setName] = React.useState('');
   const [isAuthProcessing, setIsAuthProcessing] = React.useState(false);
   const [resetSent, setResetSent] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -46,7 +47,7 @@ export default function App() {
           setUserRole(userDoc.data().role);
         } else {
           // Default role if not found
-          const role = user.email === 'luis.hen1403@gmail.com' ? 'admin' : 'instructor';
+          const role = user.email?.toLowerCase() === 'luis.hen1403@gmail.com' ? 'admin' : 'instructor';
           setUserRole(role);
           // Create user doc if it doesn't exist
           await setDoc(doc(db, 'users', user.uid), {
@@ -62,6 +63,8 @@ export default function App() {
           if (!snapshot.empty) {
             setAppSettings(snapshot.docs[0].data());
           }
+        }, (error) => {
+          console.error("Settings Snapshot Error:", error);
         });
         setLoading(false);
         return () => unsubSettings();
@@ -78,11 +81,11 @@ export default function App() {
     setIsAuthProcessing(true);
     try {
       const { signInWithEmailAndPassword } = await import('firebase/auth');
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error: any) {
       console.error("Login Error:", error);
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        setLoginError("Email ou senha incorretos.");
+        setLoginError("Email ou senha incorretos. Se você esqueceu sua senha, use o link 'Esqueceu a senha?' acima.");
       } else {
         setLoginError("Erro ao fazer login: " + (error.message || "Erro desconhecido"));
       }
@@ -117,7 +120,7 @@ export default function App() {
     setIsAuthProcessing(true);
     try {
       const { createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       await updateProfile(userCredential.user, { displayName: name });
       
       // Create user doc
@@ -132,7 +135,11 @@ export default function App() {
     } catch (error: any) {
       console.error("Signup Error:", error);
       if (error.code === 'auth/email-already-in-use') {
-        setLoginError("Este email já está em uso.");
+        setLoginError("Este e-mail já está em uso. Por favor, faça login ou use a recuperação de senha.");
+        // Auto-switch to login mode after a short delay to let them see the error
+        setTimeout(() => {
+          setLoginMode('login');
+        }, 3000);
       } else if (error.code === 'auth/weak-password') {
         setLoginError("A senha deve ter pelo menos 6 caracteres.");
       } else {
@@ -229,14 +236,23 @@ export default function App() {
                     </button>
                   )}
                 </div>
-                <input 
-                  required
-                  type="password" 
-                  className="input-corporate w-full"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <input 
+                    required
+                    type={showPassword ? "text" : "password"} 
+                    className="input-corporate w-full pr-12"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
 
               <button 
@@ -293,9 +309,30 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-left leading-relaxed"
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-left leading-relaxed space-y-2"
               >
-                {loginError}
+                <p>{loginError}</p>
+                {(loginError.includes('incorretos') || loginError.includes('uso')) && (
+                  <div className="flex flex-col gap-2">
+                    {loginError.includes('uso') && (
+                      <button 
+                        onClick={() => {
+                          setLoginMode('login');
+                          setLoginError(null);
+                        }}
+                        className="w-full py-2 bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-slate-700 transition-colors"
+                      >
+                        Ir para Login
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleForgotPassword}
+                      className="w-full py-2 bg-primary text-slate-950 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-white transition-colors"
+                    >
+                      Redefinir Senha Agora
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>
@@ -348,6 +385,7 @@ export default function App() {
       setActiveTab={setActiveTab} 
       user={user}
       appSettings={appSettings}
+      userRole={userRole}
     >
       <AnimatePresence mode="wait">
         <motion.div

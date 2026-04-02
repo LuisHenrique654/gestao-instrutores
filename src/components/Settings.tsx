@@ -6,7 +6,8 @@ import {
   Building2,
   ShieldCheck,
   AlertCircle,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { db, auth, storage } from '../firebase';
@@ -16,7 +17,9 @@ import {
   where, 
   onSnapshot, 
   setDoc, 
-  doc 
+  doc,
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -27,11 +30,14 @@ interface AppSettings {
   instructorId: string;
 }
 
-export default function Settings() {
+export default function Settings({ userRole }: { userRole: string | null }) {
   const [settings, setSettings] = React.useState<AppSettings | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [isResettingAll, setIsResettingAll] = React.useState(false);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+  const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [formData, setFormData] = React.useState({
     companyName: 'Cascavel Fire',
     companyLogoUrl: ''
@@ -66,9 +72,13 @@ export default function Settings() {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       setFormData(prev => ({ ...prev, companyLogoUrl: url }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading logo:", error);
-      alert('Erro ao fazer upload da imagem.');
+      let msg = 'Erro ao fazer upload da imagem.';
+      if (error.code === 'storage/unauthorized') {
+        msg = 'Erro de permissão: O Firebase Storage pode não estar ativado no seu console.';
+      }
+      setMessage({ text: msg, type: 'error' });
     } finally {
       setIsUploading(false);
     }
@@ -85,11 +95,51 @@ export default function Settings() {
         ...formData,
         instructorId: auth.currentUser.uid
       });
-      alert('Configurações salvas com sucesso!');
+      setMessage({ text: 'Configurações salvas com sucesso!', type: 'success' });
     } catch (error) {
       console.error("Error saving settings:", error);
+      setMessage({ text: 'Erro ao salvar configurações.', type: 'error' });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const resetAllData = async () => {
+    setIsResettingAll(true);
+    try {
+      const collections = [
+        'students', 
+        'courses', 
+        'attendance', 
+        'grades', 
+        'schedule', 
+        'library', 
+        'reports',
+        'users' // Will filter admin inside the loop
+      ];
+
+      const adminEmail = 'luis.hen1403@gmail.com';
+
+      for (const colName of collections) {
+        const snapshot = await getDocs(collection(db, colName));
+        const deletePromises = snapshot.docs
+          .filter(d => {
+            if (colName === 'users') return d.data().email?.toLowerCase() !== adminEmail;
+            return true;
+          })
+          .map(d => deleteDoc(doc(db, colName, d.id)));
+        
+        await Promise.all(deletePromises);
+      }
+      
+      setMessage({ text: 'Sistema resetado com sucesso!', type: 'success' });
+      setShowResetConfirm(false);
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      console.error("Error resetting system data:", error);
+      setMessage({ text: 'Erro ao resetar dados.', type: 'error' });
+    } finally {
+      setIsResettingAll(false);
     }
   };
 
@@ -150,7 +200,7 @@ export default function Settings() {
         </div>
 
         {/* Form Card */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-8">
           <form onSubmit={handleSubmit} className="corporate-card p-8 space-y-8">
             <div className="flex items-center gap-3 pb-6 border-b border-slate-800">
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -235,6 +285,65 @@ export default function Settings() {
               </button>
             </div>
           </form>
+
+          {userRole === 'admin' && (
+            <div className="corporate-card border-rose-500/20 bg-rose-500/5 p-8 space-y-6">
+              <div className="flex items-center gap-4 pb-6 border-b border-slate-800">
+                <div className="p-3 bg-rose-500/20 rounded-2xl text-rose-500">
+                  <AlertCircle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-white tracking-tight">ZONA DE PERIGO</h3>
+                  <p className="text-[10px] text-rose-500/70 font-bold uppercase tracking-widest">Ações Irreversíveis de Administrador</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Esta ação irá remover permanentemente todos os registros do banco de dados, incluindo alunos, cursos, notas e materiais. Utilize com extrema cautela.
+                </p>
+                
+                {!showResetConfirm ? (
+                  <button 
+                    onClick={() => setShowResetConfirm(true)}
+                    className="w-full py-4 bg-rose-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20"
+                  >
+                    <Trash2 size={18} />
+                    Zerar Todo o Banco de Dados
+                  </button>
+                ) : (
+                  <div className="flex flex-col items-center gap-4 p-6 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                    <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest text-center">Confirmar exclusão total de todos os dados?</p>
+                    <div className="flex gap-3 w-full">
+                      <button 
+                        onClick={resetAllData}
+                        disabled={isResettingAll}
+                        className="flex-1 py-4 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isResettingAll ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        SIM, APAGAR TUDO
+                      </button>
+                      <button 
+                        onClick={() => setShowResetConfirm(false)}
+                        disabled={isResettingAll}
+                        className="flex-1 py-4 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                      >
+                        CANCELAR
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {message && (
+            <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${
+              message.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+            }`}>
+              {message.text}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -112,7 +112,7 @@ export default function Students({ userRole }: { userRole: string | null }) {
     } catch (error: any) {
       console.error("Error uploading document:", error);
       if (error.code === 'storage/unauthorized') {
-        setUploadError('Erro de permissão: Verifique se as regras do Firebase Storage permitem o upload.');
+        setUploadError('Erro de permissão: O Firebase Storage pode não estar ativado no seu console.');
       } else if (error.code === 'storage/retry-limit-exceeded') {
         setUploadError('Limite de tempo excedido. Verifique sua conexão.');
       } else {

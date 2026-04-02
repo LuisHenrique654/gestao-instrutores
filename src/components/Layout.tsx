@@ -24,9 +24,10 @@ interface LayoutProps {
   setActiveTab: (tab: string) => void;
   user: any;
   appSettings?: any;
+  userRole: string | null;
 }
 
-export default function Layout({ children, activeTab, setActiveTab, user, appSettings }: LayoutProps) {
+export default function Layout({ children, activeTab, setActiveTab, user, appSettings, userRole }: LayoutProps) {
   const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(windowWidth > 1024);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -174,8 +175,13 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
         <div className="p-4 border-t border-slate-800 bg-slate-950/50">
           {(isSidebarOpen || isMobileMenuOpen) && user && (
             <div className="mb-4 px-4 py-3 bg-slate-900/50 rounded-2xl border border-slate-800">
-              <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Acesso Corporativo</p>
-              <p className="text-sm font-bold text-slate-200 truncate mt-0.5">{user.displayName || user.email}</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Acesso Corporativo</p>
+                {userRole === 'admin' && (
+                  <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[8px] font-black rounded border border-primary/30 uppercase tracking-tighter">Admin</span>
+                )}
+              </div>
+              <p className="text-sm font-bold text-slate-200 truncate">{user.displayName || user.email}</p>
             </div>
           )}
           <button

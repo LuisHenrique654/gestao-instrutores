@@ -43,6 +43,7 @@ export default function Library({ userRole }: { userRole: string | null }) {
   const [editingItem, setEditingItem] = React.useState<LibraryItem | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isUploading, setIsUploading] = React.useState(false);
+  const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
   
   const [formData, setFormData] = React.useState({
     title: '',
@@ -81,9 +82,13 @@ export default function Library({ userRole }: { userRole: string | null }) {
       if (file.type.includes('pdf')) setFormData(prev => ({ ...prev, type: 'pdf' }));
       else if (file.type.includes('video')) setFormData(prev => ({ ...prev, type: 'video' }));
       else setFormData(prev => ({ ...prev, type: 'other' }));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      alert('Erro ao fazer upload do arquivo.');
+      let msg = 'Erro ao fazer upload do arquivo.';
+      if (error.code === 'storage/unauthorized') {
+        msg = 'Erro de permissão: O Firebase Storage pode não estar ativado no seu console.';
+      }
+      setMessage({ text: msg, type: 'error' });
     } finally {
       setIsUploading(false);
     }
@@ -164,6 +169,14 @@ export default function Library({ userRole }: { userRole: string | null }) {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
+
+      {message && (
+        <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${
+          message.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+        }`}>
+          {message.text}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredItems.map((item, i) => (

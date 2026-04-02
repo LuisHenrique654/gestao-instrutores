@@ -45,24 +45,68 @@ export default function Dashboard({ userRole }: DashboardProps) {
   const [agenda, setAgenda] = React.useState<any[]>([]);
   const [loginLogs, setLoginLogs] = React.useState<any[]>([]);
   const [isClearing, setIsClearing] = React.useState(false);
+  const [isResettingAll, setIsResettingAll] = React.useState(false);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+  const [showLogsConfirm, setShowLogsConfirm] = React.useState(false);
+  const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   const clearLogs = async () => {
-    if (!window.confirm('Deseja realmente zerar todos os registros de login? Isso removerá todos os usuários (exceto você).')) return;
-    
     setIsClearing(true);
     try {
       const snapshot = await getDocs(collection(db, 'users'));
       const adminEmail = 'luis.hen1403@gmail.com';
       
       const deletePromises = snapshot.docs
-        .filter(d => d.data().email !== adminEmail)
+        .filter(d => d.data().email?.toLowerCase() !== adminEmail)
         .map(d => deleteDoc(doc(db, 'users', d.id)));
-        
+      
       await Promise.all(deletePromises);
+      setMessage({ text: 'Logs limpos com sucesso!', type: 'success' });
+      setShowLogsConfirm(false);
     } catch (error) {
       console.error("Error clearing logs:", error);
+      setMessage({ text: 'Erro ao limpar logs.', type: 'error' });
     } finally {
       setIsClearing(false);
+    }
+  };
+
+  const resetAllData = async () => {
+    setIsResettingAll(true);
+    try {
+      const collections = [
+        'students', 
+        'courses', 
+        'attendance', 
+        'grades', 
+        'schedule', 
+        'library', 
+        'reports',
+        'users' // Will filter admin inside the loop
+      ];
+
+      const adminEmail = 'luis.hen1403@gmail.com';
+
+      for (const colName of collections) {
+        const snapshot = await getDocs(collection(db, colName));
+        const deletePromises = snapshot.docs
+          .filter(d => {
+            if (colName === 'users') return d.data().email?.toLowerCase() !== adminEmail;
+            return true;
+          })
+          .map(d => deleteDoc(doc(db, colName, d.id)));
+        
+        await Promise.all(deletePromises);
+      }
+      
+      setMessage({ text: 'Sistema resetado com sucesso!', type: 'success' });
+      setShowResetConfirm(false);
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      console.error("Error resetting system data:", error);
+      setMessage({ text: 'Erro ao resetar dados.', type: 'error' });
+    } finally {
+      setIsResettingAll(false);
     }
   };
 
@@ -75,13 +119,16 @@ export default function Dashboard({ userRole }: DashboardProps) {
       // Admin sees everything
       const unsubStudents = onSnapshot(collection(db, 'students'), (s) => {
         setStats(prev => ({ ...prev, students: s.size }));
-      });
+      }, (error) => console.error("Students Snapshot Error:", error));
+      
       const unsubClasses = onSnapshot(collection(db, 'classes'), (s) => {
         setStats(prev => ({ ...prev, classes: s.size }));
-      });
+      }, (error) => console.error("Classes Snapshot Error:", error));
+      
       const unsubReports = onSnapshot(collection(db, 'reports'), (s) => {
         setStats(prev => ({ ...prev, reports: s.size }));
-      });
+      }, (error) => console.error("Reports Snapshot Error:", error));
+      
       const unsubAttendance = onSnapshot(collection(db, 'attendance'), (s) => {
         if (s.empty) {
           setStats(prev => ({ ...prev, attendance: 0 }));
@@ -89,12 +136,12 @@ export default function Dashboard({ userRole }: DashboardProps) {
         }
         const present = s.docs.filter(d => d.data().status === 'present').length;
         setStats(prev => ({ ...prev, attendance: Math.round((present / s.size) * 100) }));
-      });
+      }, (error) => console.error("Attendance Snapshot Error:", error));
 
       // Fetch all users for admin logs
       const unsubUsers = onSnapshot(query(collection(db, 'users'), orderBy('name')), (s) => {
         setLoginLogs(s.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
+      }, (error) => console.error("Users Snapshot Error:", error));
 
       return () => {
         unsubStudents();
@@ -237,29 +284,89 @@ export default function Dashboard({ userRole }: DashboardProps) {
 
       {/* Upcoming Classes / Admin Logs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 corporate-card">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-white">
-            <Clock className="text-primary" size={18} />
-            Agenda do Dia
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {agenda.length > 0 ? agenda.map((item, i) => (
-              <div key={i} className="p-5 bg-slate-900/50 rounded-2xl border border-slate-800 hover:border-primary/30 transition-all group">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-primary font-black text-xl">{new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                  <span className="px-2 py-1 bg-slate-950 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest border border-slate-800">
-                    {item.status === 'planned' ? 'Planejado' : 'Concluído'}
-                  </span>
+        <div className="lg:col-span-2 space-y-8">
+          <div className="corporate-card">
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-white">
+              <Clock className="text-primary" size={18} />
+              Agenda do Dia
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {agenda.length > 0 ? agenda.map((item, i) => (
+                <div key={i} className="p-5 bg-slate-900/50 rounded-2xl border border-slate-800 hover:border-primary/30 transition-all group">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-primary font-black text-xl">{new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="px-2 py-1 bg-slate-950 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest border border-slate-800">
+                      {item.status === 'planned' ? 'Planejado' : 'Concluído'}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-100 group-hover:text-primary transition-colors">{item.content || 'Sem conteúdo definido'}</h4>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Aula Agendada</p>
                 </div>
-                <h4 className="font-bold text-slate-100 group-hover:text-primary transition-colors">{item.content || 'Sem conteúdo definido'}</h4>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Aula Agendada</p>
-              </div>
-            )) : (
-              <div className="md:col-span-2 p-8 text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma aula agendada para hoje</p>
-              </div>
-            )}
+              )) : (
+                <div className="md:col-span-2 p-8 text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                  <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma aula agendada para hoje</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {userRole === 'admin' && (
+            <div className="corporate-card border-rose-500/20 bg-rose-500/5">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-rose-500/20 rounded-2xl text-rose-500 shadow-lg shadow-rose-500/10">
+                    <AlertCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white tracking-tight">ZONA DE PERIGO</h3>
+                    <p className="text-[10px] text-rose-500/70 font-bold uppercase tracking-widest">Ações Irreversíveis de Administrador</p>
+                  </div>
+                </div>
+                
+                {!showResetConfirm ? (
+                  <button 
+                    onClick={() => setShowResetConfirm(true)}
+                    className="w-full md:w-auto px-8 py-4 bg-rose-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20"
+                  >
+                    <Trash2 size={18} />
+                    Zerar Todo o Sistema
+                  </button>
+                ) : (
+                  <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                    <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest text-center md:text-right">Confirmar exclusão total?</p>
+                    <div className="flex gap-2 w-full md:w-auto">
+                      <button 
+                        onClick={resetAllData}
+                        disabled={isResettingAll}
+                        className="flex-1 md:flex-none px-6 py-3 bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isResettingAll ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        SIM, APAGAR TUDO
+                      </button>
+                      <button 
+                        onClick={() => setShowResetConfirm(false)}
+                        disabled={isResettingAll}
+                        className="flex-1 md:flex-none px-6 py-3 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                      >
+                        CANCELAR
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="mt-4 text-[10px] text-slate-500 leading-relaxed italic">
+                * Esta ação removerá permanentemente todos os alunos, cursos, notas, presenças e materiais da biblioteca de todos os instrutores.
+              </p>
+              
+              {message && (
+                <div className={`mt-4 p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${
+                  message.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {userRole === 'admin' && (
@@ -269,14 +376,34 @@ export default function Dashboard({ userRole }: DashboardProps) {
                 <ShieldCheck className="text-primary" size={18} />
                 Logins Realizados
               </h3>
-              <button 
-                onClick={clearLogs}
-                disabled={isClearing}
-                className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-rose-500/20"
-              >
-                {isClearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                Zerar
-              </button>
+              
+              {!showLogsConfirm ? (
+                <button 
+                  onClick={() => setShowLogsConfirm(true)}
+                  className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-rose-500/20"
+                >
+                  <Trash2 size={14} />
+                  Zerar
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest">Confirmar?</p>
+                  <button 
+                    onClick={clearLogs}
+                    disabled={isClearing}
+                    className="px-3 py-1.5 bg-rose-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all"
+                  >
+                    SIM
+                  </button>
+                  <button 
+                    onClick={() => setShowLogsConfirm(false)}
+                    disabled={isClearing}
+                    className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                  >
+                    NÃO
+                  </button>
+                </div>
+              )}
             </div>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {loginLogs.map((log, i) => (
