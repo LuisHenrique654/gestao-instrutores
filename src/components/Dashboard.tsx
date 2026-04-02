@@ -8,7 +8,9 @@ import {
   TrendingUp,
   Clock,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -27,7 +29,7 @@ const data: any[] = [];
 const performanceData: any[] = [];
 
 import { db, auth } from '../firebase';
-import { collection, query, where, onSnapshot, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 
 interface DashboardProps {
   userRole: string | null;
@@ -42,6 +44,27 @@ export default function Dashboard({ userRole }: DashboardProps) {
   });
   const [agenda, setAgenda] = React.useState<any[]>([]);
   const [loginLogs, setLoginLogs] = React.useState<any[]>([]);
+  const [isClearing, setIsClearing] = React.useState(false);
+
+  const clearLogs = async () => {
+    if (!window.confirm('Deseja realmente zerar todos os registros de login? Isso removerá todos os usuários (exceto você).')) return;
+    
+    setIsClearing(true);
+    try {
+      const snapshot = await getDocs(collection(db, 'users'));
+      const adminEmail = 'luis.hen1403@gmail.com';
+      
+      const deletePromises = snapshot.docs
+        .filter(d => d.data().email !== adminEmail)
+        .map(d => deleteDoc(doc(db, 'users', d.id)));
+        
+      await Promise.all(deletePromises);
+    } catch (error) {
+      console.error("Error clearing logs:", error);
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   React.useEffect(() => {
     if (!auth.currentUser) return;
@@ -241,10 +264,20 @@ export default function Dashboard({ userRole }: DashboardProps) {
 
         {userRole === 'admin' && (
           <div className="corporate-card">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-white">
-              <ShieldCheck className="text-primary" size={18} />
-              Logins Realizados
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+                <ShieldCheck className="text-primary" size={18} />
+                Logins Realizados
+              </h3>
+              <button 
+                onClick={clearLogs}
+                disabled={isClearing}
+                className="p-2 hover:bg-rose-500/10 rounded-lg text-rose-500 transition-all flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest border border-rose-500/20"
+              >
+                {isClearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                Zerar
+              </button>
+            </div>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {loginLogs.map((log, i) => (
                 <div key={i} className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center gap-4">

@@ -223,16 +223,28 @@ export default function App() {
               </button>
             </form>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <button 
                 onClick={() => {
                   setLoginMode(loginMode === 'login' ? 'signup' : 'login');
                   setLoginError(null);
                 }}
-                className="text-xs font-bold text-primary uppercase tracking-widest hover:underline"
+                className="text-xs font-bold text-primary uppercase tracking-widest hover:underline block w-full"
               >
                 {loginMode === 'login' ? 'Não tem uma conta? Solicitar acesso' : 'Já tem uma conta? Fazer login'}
               </button>
+              
+              {loginMode === 'login' && (
+                <button 
+                  onClick={() => {
+                    setEmail('luis.hen1403@gmail.com');
+                    setLoginError(null);
+                  }}
+                  className="text-[10px] font-bold text-slate-600 uppercase tracking-widest hover:text-primary transition-colors"
+                >
+                  Acesso Administrativo (Atalhos)
+                </button>
+              )}
             </div>
 
             {loginError && (
