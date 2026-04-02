@@ -33,6 +33,7 @@ export default function App() {
   const [password, setPassword] = React.useState('');
   const [name, setName] = React.useState('');
   const [isAuthProcessing, setIsAuthProcessing] = React.useState(false);
+  const [resetSent, setResetSent] = React.useState(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -85,6 +86,26 @@ export default function App() {
       } else {
         setLoginError("Erro ao fazer login: " + (error.message || "Erro desconhecido"));
       }
+    } finally {
+      setIsAuthProcessing(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setLoginError("Por favor, insira seu e-mail para recuperar a senha.");
+      return;
+    }
+    setLoginError(null);
+    setIsAuthProcessing(true);
+    try {
+      const { sendPasswordResetEmail } = await import('firebase/auth');
+      await sendPasswordResetEmail(auth, email);
+      setResetSent(true);
+      setTimeout(() => setResetSent(false), 5000);
+    } catch (error: any) {
+      console.error("Reset Error:", error);
+      setLoginError("Erro ao enviar e-mail de recuperação: " + (error.message || "Erro desconhecido"));
     } finally {
       setIsAuthProcessing(false);
     }
@@ -196,7 +217,18 @@ export default function App() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Senha</label>
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Senha</label>
+                  {loginMode === 'login' && (
+                    <button 
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="text-[9px] font-bold text-primary uppercase tracking-widest hover:underline"
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  )}
+                </div>
                 <input 
                   required
                   type="password" 
@@ -246,6 +278,16 @@ export default function App() {
                 </button>
               )}
             </div>
+
+            {resetSent && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold text-left leading-relaxed"
+              >
+                E-mail de recuperação enviado! Verifique sua caixa de entrada.
+              </motion.div>
+            )}
 
             {loginError && (
               <motion.div 
