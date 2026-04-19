@@ -27,6 +27,7 @@ export default function App() {
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('dashboard');
   const [appSettings, setAppSettings] = React.useState<any>(null);
+  const [selectedInstructorId, setSelectedInstructorId] = React.useState<string | null>(null);
   const [loginError, setLoginError] = React.useState<string | null>(null);
   const [loginMode, setLoginMode] = React.useState<'login' | 'signup'>('login');
   const [email, setEmail] = React.useState('');
@@ -57,14 +58,13 @@ export default function App() {
           });
         }
 
-        // Load custom settings (logo, name)
-        const q = query(collection(db, 'settings'), where('instructorId', '==', user.uid));
-        const unsubSettings = onSnapshot(q, (snapshot) => {
-          if (!snapshot.empty) {
-            setAppSettings(snapshot.docs[0].data());
+        // Load global settings (logo, name)
+        const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+          if (docSnap.exists()) {
+            setAppSettings(docSnap.data());
           }
         }, (error) => {
-          console.error("Settings Snapshot Error:", error);
+          console.error("Global Settings Snapshot Error:", error);
         });
         setLoading(false);
         return () => unsubSettings();
@@ -365,17 +365,22 @@ export default function App() {
   }
 
   const renderContent = () => {
+    const props = { 
+      userRole, 
+      selectedInstructorId: userRole === 'admin' ? selectedInstructorId : user?.uid 
+    };
+
     switch (activeTab) {
-      case 'dashboard': return <Dashboard userRole={userRole} />;
-      case 'students': return <Students userRole={userRole} />;
-      case 'attendance': return <Attendance userRole={userRole} />;
-      case 'reports': return <Reports userRole={userRole} />;
-      case 'grades': return <Grades userRole={userRole} />;
-      case 'courses': return <Courses userRole={userRole} />;
-      case 'schedule': return <Schedule userRole={userRole} />;
-      case 'library': return <Library userRole={userRole} />;
-      case 'settings': return <Settings userRole={userRole} />;
-      default: return <Dashboard userRole={userRole} />;
+      case 'dashboard': return <Dashboard {...props} />;
+      case 'students': return <Students {...props} />;
+      case 'attendance': return <Attendance {...props} />;
+      case 'reports': return <Reports {...props} />;
+      case 'grades': return <Grades {...props} />;
+      case 'courses': return <Courses {...props} />;
+      case 'schedule': return <Schedule {...props} />;
+      case 'library': return <Library {...props} />;
+      case 'settings': return <Settings {...props} />;
+      default: return <Dashboard {...props} />;
     }
   };
 
@@ -386,6 +391,8 @@ export default function App() {
       user={user}
       appSettings={appSettings}
       userRole={userRole}
+      selectedInstructorId={selectedInstructorId}
+      setSelectedInstructorId={setSelectedInstructorId}
     >
       <AnimatePresence mode="wait">
         <motion.div

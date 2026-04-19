@@ -26,7 +26,13 @@ import {
 } from 'firebase/firestore';
 import { Course, Subject } from '../types';
 
-export default function Courses({ userRole }: { userRole: string | null }) {
+export default function Courses({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null,
+  selectedInstructorId?: string | null
+}) {
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
   const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(null);
@@ -34,6 +40,8 @@ export default function Courses({ userRole }: { userRole: string | null }) {
   const [isSubjectModalOpen, setIsSubjectModalOpen] = React.useState(false);
   const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
   const [editingSubject, setEditingSubject] = React.useState<Subject | null>(null);
+
+  const effectiveInstructorId = selectedInstructorId;
 
   React.useEffect(() => {
     const handleQuickAdd = () => {
@@ -52,22 +60,18 @@ export default function Courses({ userRole }: { userRole: string | null }) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const uid = auth.currentUser.uid;
-    const isAdmin = userRole === 'admin';
+    const getQuery = (col: string, baseOrder: any) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId), baseOrder);
+      }
+      return query(collection(db, col), baseOrder);
+    };
 
-    const qCourses = isAdmin
-      ? query(collection(db, 'courses'), orderBy('name'))
-      : query(collection(db, 'courses'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeCourses = onSnapshot(qCourses, (snapshot) => {
+    const unsubscribeCourses = onSnapshot(getQuery('courses', orderBy('name')), (snapshot) => {
       setCourses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course)));
     });
 
-    const qSubjects = isAdmin
-      ? query(collection(db, 'subjects'), orderBy('name'))
-      : query(collection(db, 'subjects'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeSubjects = onSnapshot(qSubjects, (snapshot) => {
+    const unsubscribeSubjects = onSnapshot(getQuery('subjects', orderBy('name')), (snapshot) => {
       setSubjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subject)));
     });
 
@@ -75,7 +79,7 @@ export default function Courses({ userRole }: { userRole: string | null }) {
       unsubscribeCourses();
       unsubscribeSubjects();
     };
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   const handleCourseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +88,7 @@ export default function Courses({ userRole }: { userRole: string | null }) {
     try {
       const data = {
         ...courseForm,
-        instructorId: auth.currentUser.uid
+        instructorId: selectedInstructorId || auth.currentUser.uid
       };
 
       if (editingCourse) {
@@ -107,7 +111,7 @@ export default function Courses({ userRole }: { userRole: string | null }) {
     try {
       const data = {
         ...subjectForm,
-        instructorId: auth.currentUser.uid
+        instructorId: selectedInstructorId || auth.currentUser.uid
       };
 
       if (editingSubject) {

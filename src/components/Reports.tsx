@@ -34,7 +34,13 @@ import { Student, Report, Subject } from '../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export default function Reports({ userRole }: { userRole: string | null }) {
+export default function Reports({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null,
+  selectedInstructorId?: string | null
+}) {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
   const [reports, setReports] = React.useState<Report[]>([]);
@@ -42,6 +48,8 @@ export default function Reports({ userRole }: { userRole: string | null }) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingReport, setEditingReport] = React.useState<Report | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  const effectiveInstructorId = selectedInstructorId;
 
   // Form state
   const [formData, setFormData] = React.useState({
@@ -66,30 +74,22 @@ export default function Reports({ userRole }: { userRole: string | null }) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const uid = auth.currentUser.uid;
-    const isAdmin = userRole === 'admin';
+    const getQuery = (col: string, baseOrder: any) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId), baseOrder);
+      }
+      return query(collection(db, col), baseOrder);
+    };
 
-    const qStudents = isAdmin
-      ? query(collection(db, 'students'), orderBy('name'))
-      : query(collection(db, 'students'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeStudents = onSnapshot(qStudents, (snapshot) => {
+    const unsubscribeStudents = onSnapshot(getQuery('students', orderBy('name')), (snapshot) => {
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
     });
 
-    const qSubjects = isAdmin
-      ? query(collection(db, 'subjects'), orderBy('name'))
-      : query(collection(db, 'subjects'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeSubjects = onSnapshot(qSubjects, (snapshot) => {
+    const unsubscribeSubjects = onSnapshot(getQuery('subjects', orderBy('name')), (snapshot) => {
       setSubjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subject)));
     });
 
-    const qReports = isAdmin
-      ? query(collection(db, 'reports'), orderBy('date', 'desc'))
-      : query(collection(db, 'reports'), where('instructorId', '==', uid), orderBy('date', 'desc'));
-      
-    const unsubscribeReports = onSnapshot(qReports, (snapshot) => {
+    const unsubscribeReports = onSnapshot(getQuery('reports', orderBy('date', 'desc')), (snapshot) => {
       setReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report)));
       setLoading(false);
     });
@@ -99,7 +99,7 @@ export default function Reports({ userRole }: { userRole: string | null }) {
       unsubscribeSubjects();
       unsubscribeReports();
     };
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,7 +109,7 @@ export default function Reports({ userRole }: { userRole: string | null }) {
       const selectedStudent = students.find(s => s.id === formData.studentId);
       const data = {
         ...formData,
-        instructorId: selectedStudent?.instructorId || auth.currentUser.uid
+        instructorId: selectedStudent?.instructorId || selectedInstructorId || auth.currentUser.uid
       };
 
       if (editingReport) {

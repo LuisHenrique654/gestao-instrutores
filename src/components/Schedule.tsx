@@ -30,12 +30,20 @@ import { Class, Subject } from '../types';
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export default function Schedule({ userRole }: { userRole: string | null }) {
+export default function Schedule({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null,
+  selectedInstructorId?: string | null
+}) {
   const [classes, setClasses] = React.useState<Class[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingClass, setEditingClass] = React.useState<Class | null>(null);
   const [selectedDate, setSelectedDate] = React.useState(new Date());
+
+  const effectiveInstructorId = selectedInstructorId;
 
   React.useEffect(() => {
     const handleQuickAdd = () => {
@@ -57,22 +65,18 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const uid = auth.currentUser.uid;
-    const isAdmin = userRole === 'admin';
+    const getQuery = (col: string, baseOrder: any) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId), baseOrder);
+      }
+      return query(collection(db, col), baseOrder);
+    };
 
-    const qClasses = isAdmin
-      ? query(collection(db, 'classes'), orderBy('date'))
-      : query(collection(db, 'classes'), where('instructorId', '==', uid), orderBy('date'));
-      
-    const unsubscribeClasses = onSnapshot(qClasses, (snapshot) => {
+    const unsubscribeClasses = onSnapshot(getQuery('classes', orderBy('date')), (snapshot) => {
       setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Class)));
     });
 
-    const qSubjects = isAdmin
-      ? query(collection(db, 'subjects'), orderBy('name'))
-      : query(collection(db, 'subjects'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeSubjects = onSnapshot(qSubjects, (snapshot) => {
+    const unsubscribeSubjects = onSnapshot(getQuery('subjects', orderBy('name')), (snapshot) => {
       setSubjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subject)));
     });
 
@@ -80,7 +84,7 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
       unsubscribeClasses();
       unsubscribeSubjects();
     };
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +93,7 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
     try {
       const data = {
         ...formData,
-        instructorId: auth.currentUser.uid
+        instructorId: selectedInstructorId || auth.currentUser.uid
       };
 
       if (editingClass) {

@@ -16,8 +16,9 @@ import {
   Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,12 +27,34 @@ interface LayoutProps {
   user: any;
   appSettings?: any;
   userRole: string | null;
+  selectedInstructorId: string | null;
+  setSelectedInstructorId: (id: string | null) => void;
 }
 
-export default function Layout({ children, activeTab, setActiveTab, user, appSettings, userRole }: LayoutProps) {
+export default function Layout({ 
+  children, 
+  activeTab, 
+  setActiveTab, 
+  user, 
+  appSettings, 
+  userRole,
+  selectedInstructorId,
+  setSelectedInstructorId
+}: LayoutProps) {
   const [windowWidth, setWindowWidth] = React.useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(windowWidth > 1024);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [instructors, setInstructors] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (userRole === 'admin') {
+      const q = query(collection(db, 'users'), where('role', '==', 'instructor'));
+      const unsub = onSnapshot(q, (snapshot) => {
+        setInstructors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      return () => unsub();
+    }
+  }, [userRole]);
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -159,6 +182,21 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-6 overflow-y-auto custom-scrollbar">
+          {userRole === 'admin' && (isSidebarOpen || isMobileMenuOpen) && (
+            <div className="mb-6 px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl">
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Visualizar como:</label>
+              <select 
+                className="w-full bg-white border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-700 outline-none focus:border-primary transition-colors"
+                value={selectedInstructorId || ''}
+                onChange={(e) => setSelectedInstructorId(e.target.value || null)}
+              >
+                <option value="">Todos os Dados</option>
+                {instructors.map(instr => (
+                  <option key={instr.id} value={instr.id}>{instr.name || instr.email}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {menuItems.map((item) => (
             <button
               key={item.id}

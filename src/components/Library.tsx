@@ -36,13 +36,21 @@ interface LibraryItem {
   instructorId: string;
 }
 
-export default function Library({ userRole }: { userRole: string | null }) {
+export default function Library({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null,
+  selectedInstructorId?: string | null
+}) {
   const [items, setItems] = React.useState<LibraryItem[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<LibraryItem | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
   
+  const effectiveInstructorId = selectedInstructorId;
+
   const [formData, setFormData] = React.useState({
     title: '',
     description: '',
@@ -67,17 +75,19 @@ export default function Library({ userRole }: { userRole: string | null }) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const isAdmin = userRole === 'admin';
-    const q = isAdmin
-      ? query(collection(db, 'library'))
-      : query(collection(db, 'library'), where('instructorId', '==', auth.currentUser.uid));
-      
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const getQuery = (col: string) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId));
+      }
+      return collection(db, col);
+    };
+
+    const unsubscribe = onSnapshot(getQuery('library'), (snapshot) => {
       setItems(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LibraryItem)));
     });
 
     return () => unsubscribe();
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +95,7 @@ export default function Library({ userRole }: { userRole: string | null }) {
 
     const itemData = {
       ...formData,
-      instructorId: auth.currentUser.uid,
+      instructorId: selectedInstructorId || auth.currentUser?.uid,
       createdAt: new Date().toISOString()
     };
 

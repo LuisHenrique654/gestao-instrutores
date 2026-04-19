@@ -41,13 +41,21 @@ interface Subject {
   name: string;
 }
 
-export default function Grades({ userRole }: { userRole: string | null }) {
+export default function Grades({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null,
+  selectedInstructorId?: string | null
+}) {
   const [grades, setGrades] = React.useState<Grade[]>([]);
   const [students, setStudents] = React.useState<Student[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingGrade, setEditingGrade] = React.useState<Grade | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
+
+  const effectiveInstructorId = selectedInstructorId;
 
   React.useEffect(() => {
     const handleQuickAdd = () => {
@@ -69,26 +77,18 @@ export default function Grades({ userRole }: { userRole: string | null }) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const isAdmin = userRole === 'admin';
-    const uid = auth.currentUser.uid;
+    const getQuery = (col: string) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId));
+      }
+      return collection(db, col);
+    };
 
-    const qGrades = isAdmin
-      ? query(collection(db, 'grades'))
-      : query(collection(db, 'grades'), where('instructorId', '==', uid));
-      
-    const qStudents = isAdmin
-      ? query(collection(db, 'students'))
-      : query(collection(db, 'students'), where('instructorId', '==', uid));
-      
-    const qSubjects = isAdmin
-      ? query(collection(db, 'subjects'))
-      : query(collection(db, 'subjects'), where('instructorId', '==', uid));
-
-    const unsubGrades = onSnapshot(qGrades, (snapshot) => {
+    const unsubGrades = onSnapshot(getQuery('grades'), (snapshot) => {
       setGrades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Grade)));
     });
 
-    const unsubStudents = onSnapshot(qStudents, (snapshot) => {
+    const unsubStudents = onSnapshot(getQuery('students'), (snapshot) => {
       setStudents(snapshot.docs.map(doc => ({ 
         id: doc.id, 
         name: doc.data().name,
@@ -96,7 +96,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
       } as Student)));
     });
 
-    const unsubSubjects = onSnapshot(qSubjects, (snapshot) => {
+    const unsubSubjects = onSnapshot(getQuery('subjects'), (snapshot) => {
       setSubjects(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as Subject)));
     });
 
@@ -105,7 +105,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
       unsubStudents();
       unsubSubjects();
     };
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +115,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
     const gradeData = {
       ...formData,
       grade: parseFloat(formData.grade),
-      instructorId: selectedStudent?.instructorId || auth.currentUser.uid,
+      instructorId: selectedStudent?.instructorId || selectedInstructorId || auth.currentUser.uid,
       date: new Date(formData.date).toISOString()
     };
 

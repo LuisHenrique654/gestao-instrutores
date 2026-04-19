@@ -33,9 +33,10 @@ import { collection, query, where, onSnapshot, getDocs, orderBy, deleteDoc, doc 
 
 interface DashboardProps {
   userRole: string | null;
+  selectedInstructorId?: string | null;
 }
 
-export default function Dashboard({ userRole }: DashboardProps) {
+export default function Dashboard({ userRole, selectedInstructorId }: DashboardProps) {
   const [stats, setStats] = React.useState({
     students: 0,
     attendance: 0,
@@ -115,79 +116,56 @@ export default function Dashboard({ userRole }: DashboardProps) {
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const uid = auth.currentUser.uid;
+    const effectiveId = selectedInstructorId || (userRole === 'admin' ? null : auth.currentUser.uid);
 
+    const getQuery = (col: string) => {
+      if (effectiveId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveId));
+      }
+      return collection(db, col);
+    };
+
+    const unsubStudents = onSnapshot(getQuery('students'), (s) => {
+      setStats(prev => ({ ...prev, students: s.size }));
+    });
+    
+    const unsubClasses = onSnapshot(getQuery('classes'), (s) => {
+      setStats(prev => ({ ...prev, classes: s.size }));
+      setAgenda(s.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((c: any) => {
+        const classDate = new Date(c.date).toDateString();
+        const today = new Date().toDateString();
+        return classDate === today;
+      }));
+    });
+    
+    const unsubReports = onSnapshot(getQuery('reports'), (s) => {
+      setStats(prev => ({ ...prev, reports: s.size }));
+    });
+    
+    const unsubAttendance = onSnapshot(getQuery('attendance'), (s) => {
+      if (s.empty) {
+        setStats(prev => ({ ...prev, attendance: 0 }));
+        return;
+      }
+      const present = s.docs.filter(d => d.data().status === 'present').length;
+      setStats(prev => ({ ...prev, attendance: Math.round((present / s.size) * 100) }));
+    });
+
+    let unsubUsers = () => {};
     if (userRole === 'admin') {
-      // Admin sees everything
-      const unsubStudents = onSnapshot(collection(db, 'students'), (s) => {
-        setStats(prev => ({ ...prev, students: s.size }));
-      }, (error) => console.error("Students Snapshot Error:", error));
-      
-      const unsubClasses = onSnapshot(collection(db, 'classes'), (s) => {
-        setStats(prev => ({ ...prev, classes: s.size }));
-      }, (error) => console.error("Classes Snapshot Error:", error));
-      
-      const unsubReports = onSnapshot(collection(db, 'reports'), (s) => {
-        setStats(prev => ({ ...prev, reports: s.size }));
-      }, (error) => console.error("Reports Snapshot Error:", error));
-      
-      const unsubAttendance = onSnapshot(collection(db, 'attendance'), (s) => {
-        if (s.empty) {
-          setStats(prev => ({ ...prev, attendance: 0 }));
-          return;
-        }
-        const present = s.docs.filter(d => d.data().status === 'present').length;
-        setStats(prev => ({ ...prev, attendance: Math.round((present / s.size) * 100) }));
-      }, (error) => console.error("Attendance Snapshot Error:", error));
-
-      // Fetch all users for admin logs
-      const unsubUsers = onSnapshot(query(collection(db, 'users'), orderBy('name')), (s) => {
+      unsubUsers = onSnapshot(query(collection(db, 'users'), orderBy('name')), (s) => {
         setLoginLogs(s.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, (error) => console.error("Users Snapshot Error:", error));
-
-      return () => {
-        unsubStudents();
-        unsubClasses();
-        unsubReports();
-        unsubAttendance();
-        unsubUsers();
-      };
-    } else {
-      // Instructor sees only their data
-      const unsubStudents = onSnapshot(query(collection(db, 'students'), where('instructorId', '==', uid)), (s) => {
-        setStats(prev => ({ ...prev, students: s.size }));
       });
-
-      const unsubClasses = onSnapshot(query(collection(db, 'classes'), where('instructorId', '==', uid)), (s) => {
-        setStats(prev => ({ ...prev, classes: s.size }));
-        setAgenda(s.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((c: any) => {
-          const classDate = new Date(c.date).toDateString();
-          const today = new Date().toDateString();
-          return classDate === today;
-        }));
-      });
-
-      const unsubReports = onSnapshot(query(collection(db, 'reports'), where('instructorId', '==', uid)), (s) => {
-        setStats(prev => ({ ...prev, reports: s.size }));
-      });
-
-      const unsubAttendance = onSnapshot(query(collection(db, 'attendance'), where('instructorId', '==', uid)), (s) => {
-        if (s.empty) {
-          setStats(prev => ({ ...prev, attendance: 0 }));
-          return;
-        }
-        const present = s.docs.filter(d => d.data().status === 'present').length;
-        setStats(prev => ({ ...prev, attendance: Math.round((present / s.size) * 100) }));
-      });
-
-      return () => {
-        unsubStudents();
-        unsubClasses();
-        unsubReports();
-        unsubAttendance();
-      };
     }
-  }, [userRole]);
+
+    return () => {
+      unsubStudents();
+      unsubClasses();
+      unsubReports();
+      unsubAttendance();
+      unsubUsers();
+    };
+  }, [userRole, selectedInstructorId]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

@@ -26,7 +26,6 @@ interface AppSettings {
   id: string;
   companyName: string;
   companyLogoUrl: string;
-  instructorId: string;
 }
 
 export default function Settings({ userRole }: { userRole: string | null }) {
@@ -42,13 +41,10 @@ export default function Settings({ userRole }: { userRole: string | null }) {
   });
 
   React.useEffect(() => {
-    if (!auth.currentUser) return;
-
-    const q = query(collection(db, 'settings'), where('instructorId', '==', auth.currentUser.uid));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const data = snapshot.docs[0].data() as AppSettings;
-        setSettings({ id: snapshot.docs[0].id, ...data });
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() as AppSettings;
+        setSettings({ id: docSnap.id, ...data });
         setFormData({
           companyName: data.companyName || 'Cascavel Fire',
           companyLogoUrl: data.companyLogoUrl || ''
@@ -57,21 +53,17 @@ export default function Settings({ userRole }: { userRole: string | null }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
+    if (userRole !== 'admin') return;
 
     setIsSaving(true);
     try {
-      const docId = settings?.id || auth.currentUser.uid; // Use UID as doc ID for simplicity
-      await setDoc(doc(db, 'settings', docId), {
-        ...formData,
-        instructorId: auth.currentUser.uid
-      });
-      setMessage({ text: 'Configurações salvas com sucesso!', type: 'success' });
+      await setDoc(doc(db, 'settings', 'global'), formData);
+      setMessage({ text: 'Configurações globais salvas com sucesso!', type: 'success' });
     } catch (error) {
       console.error("Error saving settings:", error);
       setMessage({ text: 'Erro ao salvar configurações.', type: 'error' });
@@ -136,6 +128,14 @@ export default function Settings({ userRole }: { userRole: string | null }) {
           CONFIGURAÇÕES DO <span className="text-primary">SISTEMA</span>
         </h2>
         <p className="text-slate-500 mt-1 text-sm md:text-base">Personalize a identidade visual e parâmetros do seu portal.</p>
+        {userRole !== 'admin' && (
+          <div className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-2xl flex items-center gap-3">
+            <ShieldCheck className="text-primary" size={18} />
+            <p className="text-[10px] text-primary font-bold uppercase tracking-widest">
+              As configurações de marca são globais e gerenciadas pelo administrador.
+            </p>
+          </div>
+        )}
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -195,7 +195,8 @@ export default function Settings({ userRole }: { userRole: string | null }) {
                   <input 
                     type="text" 
                     required
-                    className="input-corporate pl-12 bg-slate-50 border-slate-200"
+                    disabled={userRole !== 'admin'}
+                    className="input-corporate pl-12 bg-slate-50 border-slate-200 disabled:opacity-50"
                     placeholder="Ex: Cascavel Fire - Unidade Sul"
                     value={formData.companyName}
                     onChange={(e) => setFormData({...formData, companyName: e.target.value})}
@@ -209,7 +210,8 @@ export default function Settings({ userRole }: { userRole: string | null }) {
                   <Upload className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input 
                     type="url" 
-                    className="input-corporate pl-12 bg-slate-50 border-slate-200"
+                    disabled={userRole !== 'admin'}
+                    className="input-corporate pl-12 bg-slate-50 border-slate-200 disabled:opacity-50"
                     placeholder="https://exemplo.com/logo.png"
                     value={formData.companyLogoUrl}
                     onChange={(e) => setFormData({...formData, companyLogoUrl: e.target.value})}
@@ -218,22 +220,24 @@ export default function Settings({ userRole }: { userRole: string | null }) {
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-100 flex justify-end">
-              <button 
-                type="submit" 
-                disabled={isSaving}
-                className="btn-corporate-primary w-full sm:w-auto px-10 py-4 text-white"
-              >
-                {isSaving ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                  <>
-                    <Save size={20} />
-                    Salvar Alterações
-                  </>
-                )}
-              </button>
-            </div>
+            {userRole === 'admin' && (
+              <div className="pt-6 border-t border-slate-100 flex justify-end">
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="btn-corporate-primary w-full sm:w-auto px-10 py-4 text-white"
+                >
+                  {isSaving ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      Salvar Alterações
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </form>
 
           {userRole === 'admin' && (

@@ -31,7 +31,13 @@ import { ptBR } from 'date-fns/locale';
 
 import { handleFirestoreError } from '../lib/firestore-utils';
 
-export default function AttendanceComponent({ userRole }: { userRole: string | null }) {
+export default function AttendanceComponent({ 
+  userRole, 
+  selectedInstructorId 
+}: { 
+  userRole: string | null, 
+  selectedInstructorId?: string | null 
+}) {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [classes, setClasses] = React.useState<Class[]>([]);
   const [subjects, setSubjects] = React.useState<Subject[]>([]);
@@ -45,6 +51,8 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
     content: '',
     status: 'planned' as 'planned' | 'completed'
   });
+
+  const effectiveInstructorId = selectedInstructorId;
 
   React.useEffect(() => {
     const handleQuickAdd = () => {
@@ -63,35 +71,23 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
   React.useEffect(() => {
     if (!auth.currentUser) return;
 
-    const uid = auth.currentUser.uid;
-    const isAdmin = userRole === 'admin';
+    const getQuery = (col: string, baseOrder: any) => {
+      if (effectiveInstructorId) {
+        return query(collection(db, col), where('instructorId', '==', effectiveInstructorId), baseOrder);
+      }
+      return query(collection(db, col), baseOrder);
+    };
 
-    const qStudents = query(collection(db, 'students'), orderBy('name'));
-      
-    const unsubscribeStudents = onSnapshot(qStudents, (snapshot) => {
+    const unsubscribeStudents = onSnapshot(query(collection(db, 'students'), orderBy('name')), (snapshot) => {
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
-    }, (error) => {
-      handleFirestoreError(error, 'list', 'students');
     });
 
-    const qClasses = isAdmin
-      ? query(collection(db, 'classes'), orderBy('date', 'desc'))
-      : query(collection(db, 'classes'), where('instructorId', '==', uid), orderBy('date', 'desc'));
-      
-    const unsubscribeClasses = onSnapshot(qClasses, (snapshot) => {
+    const unsubscribeClasses = onSnapshot(getQuery('classes', orderBy('date', 'desc')), (snapshot) => {
       setClasses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Class)));
-    }, (error) => {
-      handleFirestoreError(error, 'list', 'classes');
     });
 
-    const qSubjects = isAdmin
-      ? query(collection(db, 'subjects'), orderBy('name'))
-      : query(collection(db, 'subjects'), where('instructorId', '==', uid), orderBy('name'));
-      
-    const unsubscribeSubjects = onSnapshot(qSubjects, (snapshot) => {
+    const unsubscribeSubjects = onSnapshot(getQuery('subjects', orderBy('name')), (snapshot) => {
       setSubjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subject)));
-    }, (error) => {
-      handleFirestoreError(error, 'list', 'subjects');
     });
 
     return () => {
@@ -99,18 +95,13 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
       unsubscribeClasses();
       unsubscribeSubjects();
     };
-  }, [userRole]);
+  }, [userRole, effectiveInstructorId]);
 
   React.useEffect(() => {
     if (selectedClass && auth.currentUser) {
-      const isAdmin = userRole === 'admin';
-      const qAttendance = isAdmin
-        ? query(collection(db, 'attendance'), where('classId', '==', selectedClass.id))
-        : query(
-            collection(db, 'attendance'), 
-            where('classId', '==', selectedClass.id),
-            where('instructorId', '==', auth.currentUser.uid)
-          );
+      const qAttendance = effectiveInstructorId
+        ? query(collection(db, 'attendance'), where('classId', '==', selectedClass.id), where('instructorId', '==', effectiveInstructorId))
+        : query(collection(db, 'attendance'), where('classId', '==', selectedClass.id));
           
       const unsubscribeAttendance = onSnapshot(qAttendance, (snapshot) => {
         setAttendanceRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Attendance)));
@@ -119,7 +110,7 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
       });
       return () => unsubscribeAttendance();
     }
-  }, [selectedClass, userRole]);
+  }, [selectedClass, userRole, effectiveInstructorId]);
 
   const selectedCourseId = React.useMemo(() => {
     if (!selectedClass) return null;
@@ -154,7 +145,7 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
         studentId,
         status,
         date: new Date().toISOString(),
-        instructorId: selectedClass.instructorId || auth.currentUser.uid
+        instructorId: selectedClass.instructorId || selectedInstructorId || auth.currentUser.uid
       });
     } catch (error) {
       console.error("Error saving attendance:", error);
@@ -191,7 +182,7 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
     try {
       const data = {
         ...classFormData,
-        instructorId: auth.currentUser.uid
+        instructorId: selectedInstructorId || auth.currentUser.uid
       };
       await addDoc(collection(db, 'classes'), data);
       setIsAddModalOpen(false);
