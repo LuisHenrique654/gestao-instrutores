@@ -66,9 +66,7 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
     const uid = auth.currentUser.uid;
     const isAdmin = userRole === 'admin';
 
-    const qStudents = isAdmin 
-      ? query(collection(db, 'students'), orderBy('name'))
-      : query(collection(db, 'students'), where('instructorId', '==', uid), orderBy('name'));
+    const qStudents = query(collection(db, 'students'), orderBy('name'));
       
     const unsubscribeStudents = onSnapshot(qStudents, (snapshot) => {
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
@@ -128,9 +126,11 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
     return subjects.find(s => s.id === selectedClass.subjectId)?.courseId;
   }, [selectedClass, subjects]);
 
+  const [showAllStudents, setShowAllStudents] = React.useState(false);
+
   const filteredStudents = React.useMemo(() => {
     let result = students;
-    if (selectedCourseId) {
+    if (selectedCourseId && !showAllStudents) {
       // Filter students by course assignment
       result = result.filter(s => s.courseIds?.includes(selectedCourseId));
     }
@@ -323,22 +323,32 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                 {filteredStudents.length > 0 ? filteredStudents.map((student) => {
                   const status = getStudentStatus(student.id);
                   return (
-                    <div key={student.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group gap-4 shadow-sm">
+                    <div 
+                      key={student.id} 
+                      onClick={() => handleAttendance(student.id, status === 'present' ? 'absent' : 'present')}
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-2xl border transition-all group gap-4 shadow-sm cursor-pointer ${
+                        status === 'present' ? 'border-emerald-500/30 bg-emerald-50/20' : 'border-slate-100 hover:border-primary/20'
+                      }`}
+                    >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
+                        <div className={`w-12 h-12 rounded-xl border flex items-center justify-center overflow-hidden shadow-inner transition-colors ${
+                          status === 'present' ? 'bg-emerald-100 border-emerald-200' : 'bg-slate-50 border-slate-100'
+                        }`}>
                           {student.photoUrl ? (
                             <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
-                            <Users size={24} className="text-slate-300" />
+                            <Users size={24} className={status === 'present' ? 'text-emerald-500' : 'text-slate-300'} />
                           )}
                         </div>
                         <div className="max-w-[200px] md:max-w-xs">
-                          <span className="font-bold text-slate-700 group-hover:text-primary transition-colors block truncate">{student.name}</span>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Matrícula Ativa</p>
+                          <span className={`font-bold transition-colors block truncate ${status === 'present' ? 'text-emerald-700' : 'text-slate-700 group-hover:text-primary'}`}>{student.name}</span>
+                          <p className={`text-[10px] uppercase font-bold tracking-widest ${status === 'present' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {status === 'present' ? 'Presença Confirmada' : 'Matrícula Ativa'}
+                          </p>
                         </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-3" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => handleAttendance(student.id, 'present')}
                           className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ${
@@ -379,11 +389,19 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                   <div className="p-12 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
                     <Users className="mx-auto text-slate-300 mb-4" size={40} />
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
-                      Nenhum aluno encontrado para este curso ou busca.
+                      Nenhum aluno encontrado para este curso.
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-2">
-                      Verifique se os alunos estão vinculados ao curso desta disciplina.
-                    </p>
+                    <div className="mt-4 flex flex-col items-center gap-4">
+                      <p className="text-[10px] text-slate-400 max-w-xs">
+                        Este curso parece não ter alunos vinculados. Você pode ver todos os alunos do sistema se desejar.
+                      </p>
+                      <button 
+                        onClick={() => setShowAllStudents(true)}
+                        className="btn-corporate-primary text-[10px] px-6 py-2"
+                      >
+                        Mostrar Todos os Alunos
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
