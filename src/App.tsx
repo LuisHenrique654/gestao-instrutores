@@ -35,7 +35,7 @@ export default function App() {
   const [isAuthProcessing, setIsAuthProcessing] = React.useState(false);
   const [resetSent, setResetSent] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
-
+  
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
@@ -152,13 +152,13 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-white flex items-center justify-center">
         <motion.div 
-          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
           transition={{ repeat: Infinity, duration: 2 }}
-          className="text-primary text-4xl font-black tracking-tighter"
+          className="text-slate-950 text-4xl font-black tracking-tighter"
         >
-          {appSettings?.companyName?.toUpperCase() || 'CASCAVEL'} <span className="text-white">{appSettings?.companyName ? '' : 'FIRE'}</span>
+          {appSettings?.companyName?.toUpperCase() || 'CASCAVEL'} <span className="text-slate-900">{appSettings?.companyName ? '' : 'FIRE'}</span>
         </motion.div>
       </div>
     );
@@ -166,29 +166,29 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="h-screen bg-[#020617] flex items-center justify-center p-4">
+      <div className="h-screen bg-slate-50 flex items-center justify-center p-4">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full corporate-card text-center space-y-10 p-12 border-slate-800"
+          className="max-w-md w-full bg-white border border-slate-200 rounded-[3rem] text-center space-y-10 p-12 shadow-2xl shadow-slate-200/50"
         >
           <div className="space-y-3">
             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-primary/20 overflow-hidden">
               {appSettings?.companyLogoUrl ? (
                 <img src={appSettings.companyLogoUrl} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
               ) : (
-                <ShieldCheck className="text-slate-950" size={36} />
+                <ShieldCheck className="text-white" size={36} />
               )}
             </div>
-            <h1 className="text-4xl font-black text-white tracking-tighter">
+            <h1 className="text-4xl font-black text-slate-950 tracking-tighter">
               {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
             </h1>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Enterprise Instructor Management</p>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Enterprise Instructor Management</p>
           </div>
           
           <div className="space-y-4">
             <div className="text-left space-y-1">
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-slate-900">
                 {loginMode === 'login' ? 'Acessar Portal' : 'Criar Conta'}
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed">
@@ -201,11 +201,11 @@ export default function App() {
             <form onSubmit={loginMode === 'login' ? handleLogin : handleSignup} className="space-y-4 text-left">
               {loginMode === 'signup' && (
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Nome Completo</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
                   <input 
                     required
                     type="text" 
-                    className="input-corporate w-full"
+                    className="input-corporate w-full bg-slate-50 border-slate-200"
                     placeholder="Seu Nome"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -213,18 +213,18 @@ export default function App() {
                 </div>
               )}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Email Corporativo</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Email Corporativo</label>
                 <input 
                   required
                   type="email" 
-                  className="input-corporate w-full"
+                  className="input-corporate w-full bg-slate-50 border-slate-200"
                   placeholder="email@empresa.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <div className="space-y-1">
-                <div className="flex justify-between items-center ml-1">
+              <div className="space-y-1 text-left">
+                <div className="flex justify-between items-center ml-1 mb-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Senha</label>
                   {loginMode === 'login' && (
                     <button 
@@ -240,7 +240,7 @@ export default function App() {
                   <input 
                     required
                     type={showPassword ? "text" : "password"} 
-                    className="input-corporate w-full pr-12"
+                    className="input-corporate w-full pr-12 bg-slate-50 border-slate-200"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -248,7 +248,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-primary transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -261,7 +261,7 @@ export default function App() {
                 className="w-full btn-corporate-primary py-4 text-lg mt-4 disabled:opacity-50"
               >
                 {isAuthProcessing ? (
-                  <Loader2 className="animate-spin" size={24} />
+                  <Loader2 className="animate-spin text-white" size={24} />
                 ) : (
                   <>
                     <LogIn size={24} />
@@ -288,7 +288,7 @@ export default function App() {
                     setEmail('luis.hen1403@gmail.com');
                     setLoginError(null);
                   }}
-                  className="text-[10px] font-bold text-slate-600 uppercase tracking-widest hover:text-primary transition-colors"
+                  className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-colors"
                 >
                   Acesso Administrativo (Atalhos)
                 </button>
@@ -299,7 +299,7 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold text-left leading-relaxed"
+                className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 text-xs font-bold text-left leading-relaxed"
               >
                 E-mail de recuperação enviado! Verifique sua caixa de entrada.
               </motion.div>
@@ -309,7 +309,7 @@ export default function App() {
               <motion.div 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-bold text-left leading-relaxed space-y-2"
+                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-bold text-left leading-relaxed space-y-2"
               >
                 <p>{loginError}</p>
                 {(loginError.includes('incorretos') || loginError.includes('uso')) && (
@@ -320,14 +320,14 @@ export default function App() {
                           setLoginMode('login');
                           setLoginError(null);
                         }}
-                        className="w-full py-2 bg-slate-800 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-slate-700 transition-colors"
+                        className="w-full py-2 bg-slate-100 text-slate-900 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-slate-200 transition-colors"
                       >
                         Ir para Login
                       </button>
                     )}
                     <button 
                       onClick={handleForgotPassword}
-                      className="w-full py-2 bg-primary text-slate-950 rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-white transition-colors"
+                      className="w-full py-2 bg-primary text-white rounded-lg text-[10px] font-black uppercase tracking-tighter hover:bg-yellow-600 transition-colors"
                     >
                       Redefinir Senha Agora
                     </button>
@@ -337,26 +337,26 @@ export default function App() {
             )}
           </div>
 
-          <div className="pt-6 border-t border-slate-800">
+          <div className="pt-6 border-t border-slate-100">
             <div className="flex items-center justify-center gap-6">
               <div className="text-center">
-                <p className="text-lg font-black text-white">2k+</p>
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Alunos</p>
+                <p className="text-lg font-black text-slate-900">2k+</p>
+                <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Alunos</p>
               </div>
-              <div className="h-8 w-[1px] bg-slate-800"></div>
+              <div className="h-8 w-[1px] bg-slate-100"></div>
               <div className="text-center">
-                <p className="text-lg font-black text-white">50+</p>
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Instrutores</p>
+                <p className="text-lg font-black text-slate-900">50+</p>
+                <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Instrutores</p>
               </div>
-              <div className="h-8 w-[1px] bg-slate-800"></div>
+              <div className="h-8 w-[1px] bg-slate-100"></div>
               <div className="text-center">
-                <p className="text-lg font-black text-white">99%</p>
-                <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Uptime</p>
+                <p className="text-lg font-black text-slate-900">99%</p>
+                <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">Uptime</p>
               </div>
             </div>
           </div>
 
-          <p className="text-[9px] text-slate-600 uppercase font-bold tracking-widest">
+          <p className="text-[9px] text-slate-400 uppercase font-bold tracking-widest">
             © 2026 {appSettings?.companyName || 'Cascavel Fire'}. Todos os direitos reservados.
           </p>
         </motion.div>

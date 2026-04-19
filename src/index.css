@@ -1,37 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #FACC15; /* Professional Yellow/Gold */
-  --color-secondary: #0F172A; /* Deep Navy/Slate for a corporate feel */
-  --color-accent: #1E293B; /* Slate-800 */
-  --color-surface: #111827; /* Gray-900 */
-  --color-border: #334155; /* Slate-700 */
+  --color-primary: #ca8a04; /* Substantial Yellow/Gold for light theme */
+  --color-secondary: #f8fafc; /* Slate-50 */
+  --color-accent: #f1f5f9; /* Slate-100 */
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0; /* Slate-200 */
 }
 
 @layer base {
   body {
-    @apply bg-[#020617] text-slate-200 antialiased font-sans;
+    @apply bg-[#f8fafc] text-slate-900 antialiased font-sans transition-colors duration-500;
   }
 }
 
 .corporate-card {
-  @apply bg-surface border border-border rounded-2xl p-6 shadow-xl shadow-black/40 backdrop-blur-sm transition-all duration-300;
+  @apply bg-surface border border-border rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 backdrop-blur-sm transition-all duration-300;
 }
 
 .corporate-card:hover {
-  @apply border-primary/30 shadow-primary/5;
+  @apply border-primary/30 shadow-primary/5 shadow-2xl;
 }
 
 .btn-corporate-primary {
-  @apply bg-primary text-slate-950 font-bold py-2.5 px-5 rounded-xl hover:bg-yellow-300 transition-all active:scale-95 shadow-lg shadow-primary/10 flex items-center justify-center gap-2;
+  @apply bg-primary text-white font-bold py-2.5 px-5 rounded-xl hover:bg-yellow-600 transition-all active:scale-95 shadow-lg shadow-primary/10 flex items-center justify-center gap-2;
 }
 
 .btn-corporate-outline {
-  @apply border border-border text-slate-300 font-semibold py-2.5 px-5 rounded-xl hover:bg-accent hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2;
+  @apply border border-border text-slate-600 font-semibold py-2.5 px-5 rounded-xl hover:bg-slate-100 hover:text-slate-900 transition-all active:scale-95 flex items-center justify-center gap-2;
 }
 
 .input-corporate {
-  @apply bg-slate-900/50 border border-border text-white rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-600;
+  @apply bg-white border border-border text-slate-900 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400;
 }
 
 .sidebar-item {
@@ -39,9 +39,9 @@
 }
 
 .sidebar-item-active {
-  @apply bg-primary/10 text-primary border border-primary/20 font-semibold;
+  @apply bg-primary/10 text-primary border border-primary/20 font-bold;
 }
 
 .sidebar-item-inactive {
-  @apply text-slate-400 hover:bg-slate-800/50 hover:text-slate-100;
+  @apply text-slate-500 hover:bg-slate-100 hover:text-slate-900;
 }

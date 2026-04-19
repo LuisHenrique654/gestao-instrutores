@@ -5,6 +5,7 @@ import {
   Calendar, 
   Users, 
   Check, 
+  Plus,
   X, 
   AlertCircle,
   Filter,
@@ -37,6 +38,27 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
   const [selectedClass, setSelectedClass] = React.useState<Class | null>(null);
   const [attendanceRecords, setAttendanceRecords] = React.useState<Attendance[]>([]);
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
+  const [classFormData, setClassFormData] = React.useState({
+    subjectId: '',
+    date: new Date().toISOString(),
+    content: '',
+    status: 'planned' as 'planned' | 'completed'
+  });
+
+  React.useEffect(() => {
+    const handleQuickAdd = () => {
+      setClassFormData({
+        subjectId: '',
+        date: new Date().toISOString(),
+        content: '',
+        status: 'planned'
+      });
+      setIsAddModalOpen(true);
+    };
+    window.addEventListener('app-quick-add', handleQuickAdd);
+    return () => window.removeEventListener('app-quick-add', handleQuickAdd);
+  }, []);
 
   React.useEffect(() => {
     if (!auth.currentUser) return;
@@ -162,6 +184,23 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
     }
   };
 
+  const handleClassSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+
+    try {
+      const data = {
+        ...classFormData,
+        instructorId: auth.currentUser.uid
+      };
+      await addDoc(collection(db, 'classes'), data);
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.error("Error saving class:", error);
+      handleFirestoreError(error, 'write', 'classes');
+    }
+  };
+
   const getStudentStatus = (studentId: string) => {
     return attendanceRecords.find(r => r.studentId === studentId)?.status;
   };
@@ -171,20 +210,36 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <>
+      <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
+          <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">
             LISTA DE <span className="text-primary">PRESENÇA</span>
           </h2>
-          <p className="text-slate-400 mt-1 text-sm md:text-base">Controle de frequência e auditoria de participação.</p>
+          <p className="text-slate-500 mt-1 text-sm md:text-base">Controle de frequência e auditoria de participação.</p>
         </div>
+        <button 
+          onClick={() => {
+            setClassFormData({
+              subjectId: '',
+              date: new Date().toISOString(),
+              content: '',
+              status: 'planned'
+            });
+            setIsAddModalOpen(true);
+          }}
+          className="btn-corporate-primary w-full md:w-auto"
+        >
+          <Plus size={20} />
+          Agendar Aula
+        </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Classes List */}
         <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-lg font-bold flex items-center gap-2 mb-4 text-white">
+          <h3 className="text-lg font-bold flex items-center gap-2 mb-4 text-slate-900">
             <Calendar className="text-primary" size={18} />
             Selecionar Aula
           </h3>
@@ -195,22 +250,22 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                 onClick={() => setSelectedClass(cls)}
                 className={`w-full text-left p-5 rounded-2xl border transition-all duration-300 ${
                   selectedClass?.id === cls.id 
-                    ? 'bg-primary border-primary text-slate-950 shadow-xl shadow-primary/20 scale-[1.02]' 
-                    : 'bg-surface border-border text-slate-400 hover:border-primary/50'
+                    ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' 
+                    : 'bg-white border-slate-200 text-slate-400 hover:border-primary/50'
                 }`}
               >
                 <div className="flex justify-between items-start mb-3">
                   <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${
-                    selectedClass?.id === cls.id ? 'bg-slate-950/10 border-slate-950/20 text-slate-950' : 'bg-slate-950 border-slate-800 text-primary'
+                    selectedClass?.id === cls.id ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 border-slate-100 text-primary'
                   }`}>
                     {cls.status}
                   </span>
-                  <span className={`text-[10px] font-bold ${selectedClass?.id === cls.id ? 'text-slate-900' : 'text-slate-500'}`}>
+                  <span className={`text-[10px] font-bold ${selectedClass?.id === cls.id ? 'text-white/80' : 'text-slate-500'}`}>
                     {format(new Date(cls.date), "dd/MM/yyyy", { locale: ptBR })}
                   </span>
                 </div>
-                <h4 className="font-bold truncate text-base">{getSubjectName(cls.subjectId)}</h4>
-                <p className={`text-xs mt-2 line-clamp-1 ${selectedClass?.id === cls.id ? 'text-slate-900/70' : 'text-slate-500'}`}>
+                <h4 className={`font-bold truncate text-base ${selectedClass?.id === cls.id ? 'text-white' : 'text-slate-800'}`}>{getSubjectName(cls.subjectId)}</h4>
+                <p className={`text-xs mt-2 line-clamp-1 ${selectedClass?.id === cls.id ? 'text-white/70' : 'text-slate-500'}`}>
                   {cls.content || 'Sem descrição de conteúdo'}
                 </p>
               </button>
@@ -226,30 +281,30 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
               animate={{ opacity: 1, x: 0 }}
               className="corporate-card"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-slate-100">
                 <div>
-                  <h3 className="text-xl md:text-2xl font-black text-white tracking-tighter">
+                  <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">
                     CHAMADA: <span className="text-primary uppercase">{getSubjectName(selectedClass.subjectId)}</span>
                   </h3>
                   <p className="text-slate-500 text-sm font-medium mt-1">
                     {format(new Date(selectedClass.date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
                   </p>
                 </div>
-                <div className="text-right bg-slate-950 p-3 md:p-4 rounded-2xl border border-slate-800 self-end sm:self-auto">
+                <div className="text-right bg-white p-3 md:p-4 rounded-2xl border border-slate-200 self-end sm:self-auto shadow-sm">
                   <p className="text-2xl md:text-3xl font-black text-primary">
                     {attendanceRecords.filter(r => r.status === 'present').length}/{filteredStudents.length}
                   </p>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Presentes</p>
+                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Presentes</p>
                 </div>
               </div>
 
               <div className="mb-6 flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input 
                     type="text" 
                     placeholder="Buscar aluno nesta turma..."
-                    className="input-corporate w-full pl-12 h-12 text-sm"
+                    className="input-corporate w-full pl-12 h-12 text-sm bg-slate-50"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -257,7 +312,7 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                 <button 
                   onClick={handleMarkAllPresent}
                   disabled={filteredStudents.length === 0}
-                  className="btn-corporate-outline h-12 px-6 whitespace-nowrap flex items-center gap-2 text-xs border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
+                  className="btn-corporate-outline h-12 px-6 whitespace-nowrap flex items-center gap-2 text-xs border-emerald-500/30 text-emerald-600 hover:bg-emerald-50"
                 >
                   <Check size={16} />
                   Marcar Todos Presentes
@@ -268,18 +323,18 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                 {filteredStudents.length > 0 ? filteredStudents.map((student) => {
                   const status = getStudentStatus(student.id);
                   return (
-                    <div key={student.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-900/30 rounded-2xl border border-slate-800/50 hover:border-primary/20 transition-all group gap-4">
+                    <div key={student.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 hover:border-primary/20 transition-all group gap-4 shadow-sm">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden shadow-inner">
+                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
                           {student.photoUrl ? (
                             <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                           ) : (
-                            <Users size={24} className="text-slate-700" />
+                            <Users size={24} className="text-slate-300" />
                           )}
                         </div>
                         <div className="max-w-[200px] md:max-w-xs">
-                          <span className="font-bold text-slate-200 group-hover:text-white transition-colors block truncate">{student.name}</span>
-                          <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Matrícula Ativa</p>
+                          <span className="font-bold text-slate-700 group-hover:text-primary transition-colors block truncate">{student.name}</span>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Matrícula Ativa</p>
                         </div>
                       </div>
                       
@@ -288,8 +343,8 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                           onClick={() => handleAttendance(student.id, 'present')}
                           className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ${
                             status === 'present' 
-                              ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20 scale-110' 
-                              : 'bg-slate-950 border border-slate-800 text-slate-600 hover:text-emerald-500 hover:border-emerald-500/50'
+                              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 scale-110' 
+                              : 'bg-white border border-slate-200 text-slate-400 hover:text-emerald-500 hover:border-emerald-500/50'
                           }`}
                           title="Presente"
                         >
@@ -299,8 +354,8 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                           onClick={() => handleAttendance(student.id, 'absent')}
                           className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ${
                             status === 'absent' 
-                              ? 'bg-rose-500 text-slate-950 shadow-lg shadow-rose-500/20 scale-110' 
-                              : 'bg-slate-950 border border-slate-800 text-slate-600 hover:text-rose-500 hover:border-rose-500/50'
+                              ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20 scale-110' 
+                              : 'bg-white border border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-500/50'
                           }`}
                           title="Ausente"
                         >
@@ -310,8 +365,8 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                           onClick={() => handleAttendance(student.id, 'justified')}
                           className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ${
                             status === 'justified' 
-                              ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20 scale-110' 
-                              : 'bg-slate-950 border border-slate-800 text-slate-600 hover:text-amber-500 hover:border-amber-500/50'
+                              ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 scale-110' 
+                              : 'bg-white border border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-500/50'
                           }`}
                           title="Justificado"
                         >
@@ -321,12 +376,12 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
                     </div>
                   );
                 }) : (
-                  <div className="p-12 text-center bg-slate-950/30 rounded-[2rem] border border-dashed border-slate-800">
-                    <Users className="mx-auto text-slate-700 mb-4" size={40} />
+                  <div className="p-12 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                    <Users className="mx-auto text-slate-300 mb-4" size={40} />
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">
                       Nenhum aluno encontrado para este curso ou busca.
                     </p>
-                    <p className="text-[10px] text-slate-600 mt-2">
+                    <p className="text-[10px] text-slate-400 mt-2">
                       Verifique se os alunos estão vinculados ao curso desta disciplina.
                     </p>
                   </div>
@@ -334,16 +389,115 @@ export default function AttendanceComponent({ userRole }: { userRole: string | n
               </div>
             </motion.div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 md:p-16 border-2 border-dashed border-slate-800 rounded-[2.5rem] bg-slate-950/20">
-              <div className="p-6 md:p-8 bg-slate-900 rounded-full mb-6 md:mb-8 border border-slate-800 shadow-2xl shadow-primary/5">
+            <div className="h-full flex flex-col items-center justify-center text-center p-8 md:p-16 border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-white shadow-sm">
+              <div className="p-6 md:p-8 bg-slate-50 rounded-full mb-6 md:mb-8 border border-slate-100 shadow-xl shadow-primary/5">
                 <ArrowRight size={32} className="text-primary animate-pulse md:w-12 md:h-12" />
               </div>
-              <h3 className="text-xl md:text-2xl font-black text-white mb-3 tracking-tight">SELECIONE UMA AULA</h3>
+              <h3 className="text-xl md:text-2xl font-black text-slate-900 mb-3 tracking-tight">SELECIONE UMA AULA</h3>
               <p className="text-slate-500 max-w-xs leading-relaxed text-sm md:text-base">Escolha uma aula na lista ao lado para iniciar o processo de chamada corporativa.</p>
             </div>
           )}
         </div>
       </div>
     </div>
+    
+      {/* Add Class Modal */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.9 }}
+              className="relative bg-white border border-slate-200 w-full max-w-lg rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-slate-200/50 max-h-[90vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="flex items-center justify-between mb-6 md:mb-10">
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">
+                  AGENDAR <span className="text-primary">AULA</span>
+                </h3>
+                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleClassSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Unidade Curricular</label>
+                  <select 
+                    required
+                    className="input-corporate w-full bg-slate-50"
+                    value={classFormData.subjectId}
+                    onChange={(e) => setClassFormData({...classFormData, subjectId: e.target.value})}
+                  >
+                    <option value="" className="bg-white">Selecione...</option>
+                    {subjects.map(s => (
+                      <option key={s.id} value={s.id} className="bg-white">{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Data e Horário</label>
+                    <input 
+                      required
+                      type="datetime-local" 
+                      className="input-corporate w-full bg-slate-50"
+                      value={classFormData.date.slice(0, 16)}
+                      onChange={(e) => setClassFormData({...classFormData, date: new Date(e.target.value).toISOString()})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Status Operacional</label>
+                    <select 
+                      className="input-corporate w-full bg-slate-50"
+                      value={classFormData.status}
+                      onChange={(e) => setClassFormData({...classFormData, status: e.target.value as any})}
+                    >
+                      <option value="planned" className="bg-white">Planejada</option>
+                      <option value="completed" className="bg-white">Concluída</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Conteúdo Programático</label>
+                  <textarea 
+                    className="input-corporate w-full h-32 resize-none bg-slate-50"
+                    placeholder="Quais competências serão abordadas nesta sessão?"
+                    value={classFormData.content}
+                    onChange={(e) => setClassFormData({...classFormData, content: e.target.value})}
+                  />
+                </div>
+
+                <div className="flex gap-4 pt-6">
+                  <button 
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="flex-1 btn-corporate-outline"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 btn-corporate-primary"
+                  >
+                    <Check size={20} />
+                    Confirmar Aula
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

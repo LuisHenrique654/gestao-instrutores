@@ -12,7 +12,8 @@ import {
   ShieldCheck,
   GraduationCap,
   Library,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
@@ -69,10 +70,12 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
     }
   };
 
+  const showFAB = ['students', 'attendance', 'reports', 'grades', 'courses', 'schedule', 'library'].includes(activeTab);
+
   return (
-    <div className="flex h-screen bg-[#020617] overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 z-[60]">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-[60]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
             {appSettings?.companyLogoUrl ? (
@@ -82,7 +85,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
             )}
           </div>
           <div className="flex flex-col justify-center">
-            <h1 className="text-lg font-bold text-white tracking-tight truncate leading-tight">
+            <h1 className="text-lg font-bold text-slate-950 tracking-tight truncate leading-tight">
               {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
             </h1>
             <p className="text-[9px] text-primary font-bold tracking-[0.1em] -mt-0.5">PORTAL DO INSTRUTOR</p>
@@ -90,7 +93,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
         </div>
         <button 
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-3 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors active:scale-90"
+          className="p-3 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors active:scale-90"
           aria-label="Menu"
         >
           {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
@@ -117,7 +120,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
           x: (windowWidth <= 1024 && !isMobileMenuOpen) ? -280 : 0
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="bg-slate-950 border-r border-slate-800 flex flex-col z-[70] fixed lg:static inset-y-0 left-0 shadow-2xl shadow-black lg:rounded-none rounded-r-[2rem]"
+        className="bg-white border-r border-slate-200 flex flex-col z-[70] fixed lg:static inset-y-0 left-0 shadow-2xl shadow-slate-200/50 lg:rounded-none rounded-r-[2rem]"
       >
         <div className="p-6 flex items-center justify-between">
           {(isSidebarOpen || isMobileMenuOpen) && (
@@ -134,7 +137,7 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
                 )}
               </div>
               <div className="flex flex-col justify-center overflow-hidden">
-                <h1 className="text-xl font-bold text-white tracking-tight truncate leading-tight">
+                <h1 className="text-xl font-bold text-slate-950 tracking-tight truncate leading-tight">
                   {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
                 </h1>
                 <p className="text-[10px] text-primary font-bold tracking-[0.2em] mt-0.5">PORTAL DO INSTRUTOR</p>
@@ -143,13 +146,13 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
           )}
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hidden lg:block p-2 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors"
+            className="hidden lg:block p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
           >
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
-            className="lg:hidden p-3 hover:bg-slate-800 rounded-xl text-slate-400 transition-colors active:scale-90"
+            className="lg:hidden p-3 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors active:scale-90"
           >
             <X size={28} />
           </button>
@@ -172,21 +175,21 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/50">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           {(isSidebarOpen || isMobileMenuOpen) && user && (
-            <div className="mb-4 px-4 py-3 bg-slate-900/50 rounded-2xl border border-slate-800">
+            <div className="mb-4 px-4 py-3 bg-white rounded-2xl border border-slate-200">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Acesso Corporativo</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Acesso Corporativo</p>
                 {userRole === 'admin' && (
                   <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-[8px] font-black rounded border border-primary/30 uppercase tracking-tighter">Admin</span>
                 )}
               </div>
-              <p className="text-sm font-bold text-slate-200 truncate">{user.displayName || user.email}</p>
+              <p className="text-sm font-bold text-slate-900 truncate">{user.displayName || user.email}</p>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center text-slate-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-all duration-200 ${isMobileMenuOpen ? 'p-4' : 'p-3'}`}
+            className={`w-full flex items-center text-slate-500 hover:bg-red-500/10 hover:text-red-500 rounded-xl transition-all duration-200 ${isMobileMenuOpen ? 'p-4' : 'p-3'}`}
           >
             <LogOut size={isMobileMenuOpen ? 24 : 20} />
             {(isSidebarOpen || isMobileMenuOpen) && <span className={`ml-4 font-bold ${isMobileMenuOpen ? 'text-base' : 'text-sm'}`}>Encerrar Sessão</span>}
@@ -195,10 +198,28 @@ export default function Layout({ children, activeTab, setActiveTab, user, appSet
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-[#020617] p-4 md:p-8 pt-20 lg:pt-8">
+      <main className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8 pt-20 lg:pt-8 relative">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
+
+        {/* Global FAB */}
+        <AnimatePresence>
+          {showFAB && (
+            <motion.button
+              initial={{ scale: 0, opacity: 0, y: 100 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0, opacity: 0, y: 100 }}
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => window.dispatchEvent(new CustomEvent('app-quick-add'))}
+              className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-[100] w-14 h-14 md:w-16 md:h-16 bg-primary text-white rounded-full shadow-2xl shadow-primary/30 flex items-center justify-center border-4 border-white group"
+              title="Adição Rápida"
+            >
+              <Plus size={32} className="group-hover:rotate-12 transition-transform" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

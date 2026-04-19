@@ -42,13 +42,13 @@ export default class ErrorBoundary extends (React.Component as any) {
       }
 
       return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-surface border border-border rounded-[2.5rem] p-10 text-center shadow-2xl">
-            <div className="w-20 h-20 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white border border-slate-200 rounded-[2.5rem] p-10 text-center shadow-2xl shadow-slate-200/50">
+            <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-rose-100">
               <AlertCircle className="text-rose-500" size={40} />
             </div>
-            <h2 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase">Ops! Algo deu errado</h2>
-            <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+            <h2 className="text-2xl font-black text-slate-900 mb-4 tracking-tighter uppercase">Ops! Algo deu errado</h2>
+            <p className="text-slate-500 mb-8 text-sm leading-relaxed">
               {errorMessage}
             </p>
             <button

@@ -37,6 +37,15 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
   const [editingClass, setEditingClass] = React.useState<Class | null>(null);
   const [selectedDate, setSelectedDate] = React.useState(new Date());
 
+  React.useEffect(() => {
+    const handleQuickAdd = () => {
+      resetForm();
+      setIsModalOpen(true);
+    };
+    window.addEventListener('app-quick-add', handleQuickAdd);
+    return () => window.removeEventListener('app-quick-add', handleQuickAdd);
+  }, []);
+
   // Form state
   const [formData, setFormData] = React.useState({
     subjectId: '',
@@ -138,10 +147,10 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
+          <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">
             CRONOGRAMA DE <span className="text-primary">AULAS</span>
           </h2>
-          <p className="text-slate-400 mt-1 text-sm md:text-base">Planejamento estratégico e controle de conteúdo ministrado.</p>
+          <p className="text-slate-500 mt-1 text-sm md:text-base">Planejamento estratégico e controle de conteúdo ministrado.</p>
         </div>
         <button 
           onClick={() => { resetForm(); setIsModalOpen(true); }}
@@ -155,21 +164,21 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Calendar Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="corporate-card p-6">
+          <div className="corporate-card p-6 bg-white shadow-sm border-slate-200">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="font-bold text-white uppercase tracking-widest text-[10px]">Calendário Estratégico</h3>
+              <h3 className="font-bold text-slate-900 uppercase tracking-widest text-[10px]">Calendário Estratégico</h3>
               <div className="flex gap-1">
-                <button onClick={() => setSelectedDate(addDays(selectedDate, -7))} className="p-2 hover:bg-slate-800 rounded-xl text-slate-500 transition-colors">
+                <button onClick={() => setSelectedDate(addDays(selectedDate, -7))} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
                   <ChevronLeft size={16} />
                 </button>
-                <button onClick={() => setSelectedDate(addDays(selectedDate, 7))} className="p-2 hover:bg-slate-800 rounded-xl text-slate-500 transition-colors">
+                <button onClick={() => setSelectedDate(addDays(selectedDate, 7))} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
                   <ChevronRight size={16} />
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-7 gap-1 mb-4">
               {['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) => (
-                <div key={i} className="text-center text-[10px] font-black text-slate-600">{d}</div>
+                <div key={i} className="text-center text-[10px] font-black text-slate-300">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">
@@ -182,13 +191,13 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                     onClick={() => setSelectedDate(day)}
                     className={`aspect-square flex flex-col items-center justify-center rounded-xl text-sm transition-all relative ${
                       isSelected 
-                        ? 'bg-primary text-slate-950 font-bold shadow-lg shadow-primary/20 scale-110 z-10' 
-                        : 'text-slate-400 hover:bg-slate-800'
+                        ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20 scale-110 z-10' 
+                        : 'text-slate-500 hover:bg-slate-50'
                     }`}
                   >
                     {format(day, 'd')}
                     {hasClasses && !isSelected && (
-                      <div className="absolute bottom-1.5 w-1 h-1 bg-primary rounded-full shadow-[0_0_5px_rgba(250,204,21,0.5)]"></div>
+                      <div className="absolute bottom-1.5 w-1 h-1 bg-primary rounded-full"></div>
                     )}
                   </button>
                 );
@@ -196,20 +205,20 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
             </div>
           </div>
 
-          <div className="corporate-card p-6">
-            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Métricas da Semana</h4>
+          <div className="corporate-card p-6 bg-white shadow-sm border-slate-200">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Métricas da Semana</h4>
             <div className="space-y-5">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400 font-medium">Aulas Planejadas</span>
-                <span className="font-black text-white">{classes.filter(c => c.status === 'planned').length}</span>
+                <span className="text-sm text-slate-500 font-medium">Aulas Planejadas</span>
+                <span className="font-black text-slate-900">{classes.filter(c => c.status === 'planned').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400 font-medium">Aulas Concluídas</span>
-                <span className="font-black text-emerald-500">{classes.filter(c => c.status === 'completed').length}</span>
+                <span className="text-sm text-slate-500 font-medium">Aulas Concluídas</span>
+                <span className="font-black text-emerald-600">{classes.filter(c => c.status === 'completed').length}</span>
               </div>
-              <div className="h-[1px] bg-slate-800 w-full"></div>
+              <div className="h-[1px] bg-slate-100 w-full"></div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-400 font-medium">Taxa de Execução</span>
+                <span className="text-sm text-slate-500 font-medium">Taxa de Execução</span>
                 <span className="font-black text-primary">
                   {Math.round((classes.filter(c => c.status === 'completed').length / (classes.length || 1)) * 100)}%
                 </span>
@@ -221,7 +230,7 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
         {/* Schedule Content */}
         <div className="lg:col-span-3 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase">
+            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">
               AULAS PARA: <span className="text-primary">{format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</span>
             </h3>
           </div>
@@ -232,32 +241,32 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                 key={cls.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="corporate-card group relative overflow-hidden"
+                className="corporate-card group relative overflow-hidden bg-white shadow-sm border-slate-200"
               >
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button 
                     onClick={() => openEditModal(cls)}
-                    className="p-2 hover:bg-slate-800 rounded-xl text-blue-400 transition-colors"
+                    className="p-2 hover:bg-slate-50 rounded-xl text-blue-600 transition-colors"
                   >
                     <Edit2 size={16} />
                   </button>
                   <button 
                     onClick={() => handleDelete(cls.id)}
-                    className="p-2 hover:bg-slate-800 rounded-xl text-rose-500 transition-colors"
+                    className="p-2 hover:bg-slate-50 rounded-xl text-rose-600 transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
-                  <div className="md:w-1/4 flex flex-col justify-center items-center p-6 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
+                  <div className="md:w-1/4 flex flex-col justify-center items-center p-6 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
                     <Clock className="text-primary mb-3" size={28} />
-                    <p className="text-3xl font-black text-white tracking-tighter">
+                    <p className="text-3xl font-black text-slate-900 tracking-tighter">
                       {format(new Date(cls.date), "HH:mm")}
                     </p>
                     <span className={`mt-4 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                       cls.status === 'completed' 
-                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
                         : 'bg-primary/10 text-primary border-primary/20'
                     }`}>
                       {cls.status === 'completed' ? 'CONCLUÍDA' : 'PLANEJADA'}
@@ -266,22 +275,22 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
 
                   <div className="md:w-3/4 py-2">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-slate-900 rounded-lg border border-slate-800">
+                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
                         <BookOpen size={18} className="text-primary" />
                       </div>
-                      <h4 className="text-2xl font-black text-white uppercase tracking-tighter">
+                      <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
                         {getSubjectName(cls.subjectId)}
                       </h4>
                     </div>
-                    <p className="text-slate-400 text-sm leading-relaxed mb-6 font-medium">
+                    <p className="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
                       {cls.content || 'Nenhum conteúdo estratégico planejado para esta sessão.'}
                     </p>
                     <div className="flex items-center gap-6">
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                         <MapPin size={14} className="text-primary" />
                         <span>Sala Corporativa</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                         <Clock size={14} className="text-primary" />
                         <span>60 Minutos</span>
                       </div>
@@ -292,14 +301,14 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
             ))}
 
             {dayClasses.length === 0 && (
-              <div className="text-center py-24 bg-slate-950/20 rounded-[2.5rem] border-2 border-dashed border-slate-800">
-                <div className="p-8 bg-slate-900 rounded-full w-fit mx-auto mb-6 border border-slate-800 shadow-2xl">
-                  <CalendarIcon size={48} className="text-slate-800" />
+              <div className="text-center py-24 bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                <div className="p-8 bg-white rounded-full w-fit mx-auto mb-6 border border-slate-100 shadow-xl">
+                  <CalendarIcon size={48} className="text-slate-200" />
                 </div>
                 <p className="text-slate-500 font-medium text-lg">Nenhuma aula agendada para este período.</p>
                 <button 
                   onClick={() => { resetForm(); setIsModalOpen(true); }}
-                  className="mt-6 text-primary font-black uppercase tracking-widest text-xs hover:text-white transition-colors flex items-center gap-2 mx-auto"
+                  className="mt-6 text-primary font-black uppercase tracking-widest text-xs hover:text-primary/80 transition-colors flex items-center gap-2 mx-auto"
                 >
                   <Plus size={16} />
                   Agendar primeira sessão
@@ -319,19 +328,19 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 50, scale: 0.9 }}
-              className="relative bg-surface border border-border w-full max-w-lg rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-black max-h-[90vh] overflow-y-auto custom-scrollbar"
+              className="relative bg-white border border-slate-200 w-full max-w-lg rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-slate-200/50 max-h-[90vh] overflow-y-auto custom-scrollbar"
             >
               <div className="flex items-center justify-between mb-6 md:mb-10">
-                <h3 className="text-xl md:text-2xl font-black text-white tracking-tighter">
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">
                   {editingClass ? 'EDITAR' : 'AGENDAR'} <span className="text-primary">AULA</span>
                 </h3>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-800 rounded-full text-slate-500 transition-colors">
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
                   <X size={24} />
                 </button>
               </div>
@@ -341,13 +350,13 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Unidade Curricular</label>
                   <select 
                     required
-                    className="input-corporate w-full"
+                    className="input-corporate w-full bg-slate-50"
                     value={formData.subjectId}
                     onChange={(e) => setFormData({...formData, subjectId: e.target.value})}
                   >
-                    <option value="" className="bg-slate-900">Selecione...</option>
+                    <option value="" className="bg-white">Selecione...</option>
                     {subjects.map(s => (
-                      <option key={s.id} value={s.id} className="bg-slate-900">{s.name}</option>
+                      <option key={s.id} value={s.id} className="bg-white">{s.name}</option>
                     ))}
                   </select>
                 </div>
@@ -358,7 +367,7 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                     <input 
                       required
                       type="datetime-local" 
-                      className="input-corporate w-full"
+                      className="input-corporate w-full bg-slate-50"
                       value={formData.date.slice(0, 16)}
                       onChange={(e) => setFormData({...formData, date: new Date(e.target.value).toISOString()})}
                     />
@@ -366,12 +375,12 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Status Operacional</label>
                     <select 
-                      className="input-corporate w-full"
+                      className="input-corporate w-full bg-slate-50"
                       value={formData.status}
                       onChange={(e) => setFormData({...formData, status: e.target.value as any})}
                     >
-                      <option value="planned" className="bg-slate-900">Planejada</option>
-                      <option value="completed" className="bg-slate-900">Concluída</option>
+                      <option value="planned" className="bg-white">Planejada</option>
+                      <option value="completed" className="bg-white">Concluída</option>
                     </select>
                   </div>
                 </div>
@@ -379,7 +388,7 @@ export default function Schedule({ userRole }: { userRole: string | null }) {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Conteúdo Programático</label>
                   <textarea 
-                    className="input-corporate w-full h-32 resize-none"
+                    className="input-corporate w-full h-32 resize-none bg-slate-50"
                     placeholder="Quais competências serão abordadas nesta sessão?"
                     value={formData.content}
                     onChange={(e) => setFormData({...formData, content: e.target.value})}

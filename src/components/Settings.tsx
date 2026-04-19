@@ -10,7 +10,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { db, auth, storage } from '../firebase';
+import { db, auth } from '../firebase';
 import { 
   collection, 
   query, 
@@ -21,7 +21,6 @@ import {
   getDocs,
   deleteDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface AppSettings {
   id: string;
@@ -34,7 +33,6 @@ export default function Settings({ userRole }: { userRole: string | null }) {
   const [settings, setSettings] = React.useState<AppSettings | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
   const [isResettingAll, setIsResettingAll] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
@@ -62,28 +60,6 @@ export default function Settings({ userRole }: { userRole: string | null }) {
     return () => unsubscribe();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !auth.currentUser) return;
-
-    setIsUploading(true);
-    try {
-      const storageRef = ref(storage, `settings/${auth.currentUser.uid}/logo_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setFormData(prev => ({ ...prev, companyLogoUrl: url }));
-    } catch (error: any) {
-      console.error("Error uploading logo:", error);
-      let msg = 'Erro ao fazer upload da imagem.';
-      if (error.code === 'storage/unauthorized') {
-        msg = 'Erro de permissão: O Firebase Storage pode não estar ativado no seu console.';
-      }
-      setMessage({ text: msg, type: 'error' });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser) return;
@@ -110,11 +86,13 @@ export default function Settings({ userRole }: { userRole: string | null }) {
       const collections = [
         'students', 
         'courses', 
+        'subjects',
         'attendance', 
         'grades', 
-        'schedule', 
+        'classes', 
         'library', 
         'reports',
+        'settings',
         'users' // Will filter admin inside the loop
       ];
 
@@ -154,17 +132,17 @@ export default function Settings({ userRole }: { userRole: string | null }) {
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
       <header>
-        <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
+        <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">
           CONFIGURAÇÕES DO <span className="text-primary">SISTEMA</span>
         </h2>
-        <p className="text-slate-400 mt-1 text-sm md:text-base">Personalize a identidade visual e parâmetros do seu portal.</p>
+        <p className="text-slate-500 mt-1 text-sm md:text-base">Personalize a identidade visual e parâmetros do seu portal.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Preview Card */}
         <div className="md:col-span-1 space-y-6">
-          <div className="corporate-card p-8 text-center space-y-6">
-            <div className="w-24 h-24 bg-slate-900 rounded-3xl flex items-center justify-center mx-auto border border-slate-800 overflow-hidden group relative">
+          <div className="corporate-card p-8 text-center space-y-6 bg-white shadow-sm border-slate-200">
+            <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto border border-slate-100 overflow-hidden group relative">
               {formData.companyLogoUrl ? (
                 <img 
                   src={formData.companyLogoUrl} 
@@ -173,15 +151,15 @@ export default function Settings({ userRole }: { userRole: string | null }) {
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <Building2 className="text-slate-700 group-hover:text-primary transition-colors" size={40} />
+                <Building2 className="text-slate-200 group-hover:text-primary transition-colors" size={40} />
               )}
             </div>
             <div>
-              <h3 className="text-xl font-black text-white tracking-tight uppercase">{formData.companyName}</h3>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Visualização da Marca</p>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase">{formData.companyName}</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Visualização da Marca</p>
             </div>
-            <div className="pt-6 border-t border-slate-800">
-              <div className="flex items-center justify-center gap-2 text-emerald-500">
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-center gap-2 text-emerald-600">
                 <ShieldCheck size={16} />
                 <span className="text-[10px] font-bold uppercase tracking-widest">Ambiente Seguro</span>
               </div>
@@ -199,25 +177,25 @@ export default function Settings({ userRole }: { userRole: string | null }) {
           </div>
         </div>
 
-        {/* Form Card */}
+           {/* Form Card */}
         <div className="md:col-span-2 space-y-8">
-          <form onSubmit={handleSubmit} className="corporate-card p-8 space-y-8">
-            <div className="flex items-center gap-3 pb-6 border-b border-slate-800">
+          <form onSubmit={handleSubmit} className="corporate-card p-8 space-y-8 bg-white shadow-sm border-slate-200">
+            <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
                 <SettingsIcon size={20} />
               </div>
-              <h3 className="text-lg font-bold text-white">Identidade Visual</h3>
+              <h3 className="text-lg font-bold text-slate-900">Identidade Visual</h3>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Nome da Empresa / Unidade</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nome da Empresa / Unidade</label>
                 <div className="relative">
-                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input 
                     type="text" 
                     required
-                    className="input-corporate pl-12"
+                    className="input-corporate pl-12 bg-slate-50 border-slate-200"
                     placeholder="Ex: Cascavel Fire - Unidade Sul"
                     value={formData.companyName}
                     onChange={(e) => setFormData({...formData, companyName: e.target.value})}
@@ -226,40 +204,12 @@ export default function Settings({ userRole }: { userRole: string | null }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Logo da Empresa (Upload)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">URL da Logo (PNG/SVG)</label>
                 <div className="relative">
-                  <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${
-                    isUploading ? 'bg-slate-900/50 border-primary/50' : 'bg-slate-950 border-slate-800 hover:border-primary/50'
-                  }`}>
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      {isUploading ? (
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                      ) : (
-                        <>
-                          <Upload className="w-8 h-8 text-slate-500 mb-2" />
-                          <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Clique para fazer upload</p>
-                        </>
-                      )}
-                    </div>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      disabled={isUploading}
-                    />
-                  </label>
-                </div>
-                <p className="text-[10px] text-slate-600 font-medium">Recomendado: PNG com fundo transparente.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ou URL da Logo (PNG/SVG)</label>
-                <div className="relative">
-                  <Upload className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                  <Upload className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input 
                     type="url" 
-                    className="input-corporate pl-12"
+                    className="input-corporate pl-12 bg-slate-50 border-slate-200"
                     placeholder="https://exemplo.com/logo.png"
                     value={formData.companyLogoUrl}
                     onChange={(e) => setFormData({...formData, companyLogoUrl: e.target.value})}
@@ -268,14 +218,14 @@ export default function Settings({ userRole }: { userRole: string | null }) {
               </div>
             </div>
 
-            <div className="pt-6 border-t border-slate-800 flex justify-end">
+            <div className="pt-6 border-t border-slate-100 flex justify-end">
               <button 
                 type="submit" 
                 disabled={isSaving}
-                className="btn-corporate-primary w-full sm:w-auto px-10 py-4"
+                className="btn-corporate-primary w-full sm:w-auto px-10 py-4 text-white"
               >
                 {isSaving ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-950"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : (
                   <>
                     <Save size={20} />
@@ -287,32 +237,32 @@ export default function Settings({ userRole }: { userRole: string | null }) {
           </form>
 
           {userRole === 'admin' && (
-            <div className="corporate-card border-rose-500/20 bg-rose-500/5 p-8 space-y-6">
-              <div className="flex items-center gap-4 pb-6 border-b border-slate-800">
-                <div className="p-3 bg-rose-500/20 rounded-2xl text-rose-500">
+            <div className="corporate-card border-rose-100 bg-rose-50/30 p-8 space-y-6">
+              <div className="flex items-center gap-4 pb-6 border-b border-rose-100">
+                <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-500">
                   <AlertCircle size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-white tracking-tight">ZONA DE PERIGO</h3>
-                  <p className="text-[10px] text-rose-500/70 font-bold uppercase tracking-widest">Ações Irreversíveis de Administrador</p>
+                  <h3 className="text-xl font-black text-rose-900 tracking-tight">ZONA DE PERIGO</h3>
+                  <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest">Ações Irreversíveis de Administrador</p>
                 </div>
               </div>
               
               <div className="space-y-4">
-                <p className="text-sm text-slate-400 leading-relaxed">
+                <p className="text-sm text-slate-500 leading-relaxed">
                   Esta ação irá remover permanentemente todos os registros do banco de dados, incluindo alunos, cursos, notas e materiais. Utilize com extrema cautela.
                 </p>
                 
                 {!showResetConfirm ? (
                   <button 
                     onClick={() => setShowResetConfirm(true)}
-                    className="w-full py-4 bg-rose-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-rose-500/20"
+                    className="w-full py-4 bg-rose-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-3 shadow-xl shadow-rose-500/10"
                   >
                     <Trash2 size={18} />
                     Zerar Todo o Banco de Dados
                   </button>
                 ) : (
-                  <div className="flex flex-col items-center gap-4 p-6 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                  <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-2xl border border-rose-100">
                     <p className="text-[10px] text-rose-500 font-black uppercase tracking-widest text-center">Confirmar exclusão total de todos os dados?</p>
                     <div className="flex gap-3 w-full">
                       <button 
@@ -326,7 +276,7 @@ export default function Settings({ userRole }: { userRole: string | null }) {
                       <button 
                         onClick={() => setShowResetConfirm(false)}
                         disabled={isResettingAll}
-                        className="flex-1 py-4 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                        className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                       >
                         CANCELAR
                       </button>
@@ -336,7 +286,6 @@ export default function Settings({ userRole }: { userRole: string | null }) {
               </div>
             </div>
           )}
-
           {message && (
             <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-center ${
               message.type === 'success' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'

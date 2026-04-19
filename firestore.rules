@@ -49,7 +49,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (request.auth.token.email == "luis.hen1403@gmail.com" || 
+        ((request.auth.token.email != null && request.auth.token.email.toLowerCase() == "luis.hen1403@gmail.com") || 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
@@ -129,6 +129,14 @@ service cloud.firestore {
     // ===============================================================
     // Rules
     // ===============================================================
+
+    // ===============================================================
+    // Master Admin Rule
+    // ===============================================================
+    match /{document=**} {
+      allow read, write: if isAuthenticated() && 
+        (request.auth.token.email != null && request.auth.token.email.toLowerCase() == "luis.hen1403@gmail.com");
+    }
 
     match /users/{userId} {
       allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());

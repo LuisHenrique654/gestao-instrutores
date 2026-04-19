@@ -77,11 +77,13 @@ export default function Dashboard({ userRole }: DashboardProps) {
       const collections = [
         'students', 
         'courses', 
+        'subjects',
         'attendance', 
         'grades', 
-        'schedule', 
+        'classes', 
         'library', 
         'reports',
+        'settings',
         'users' // Will filter admin inside the loop
       ];
 
@@ -191,14 +193,14 @@ export default function Dashboard({ userRole }: DashboardProps) {
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
+          <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">
             PAINEL DE <span className="text-primary">CONTROLE</span>
           </h2>
-          <p className="text-slate-400 mt-1 text-sm md:text-base">Gestão estratégica de turmas e indicadores de desempenho.</p>
+          <p className="text-slate-500 mt-1 text-sm md:text-base">Gestão estratégica de turmas e indicadores de desempenho.</p>
         </div>
-        <div className="flex items-center gap-3 bg-slate-900 p-3 rounded-2xl border border-slate-800 shadow-lg self-start md:self-auto">
+        <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm self-start md:self-auto">
           <Calendar className="text-primary" size={20} />
-          <span className="text-sm font-bold text-slate-200">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          <span className="text-sm font-bold text-slate-800">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
         </div>
       </header>
 
@@ -218,15 +220,15 @@ export default function Dashboard({ userRole }: DashboardProps) {
             className="corporate-card group cursor-default"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl bg-slate-950 border border-slate-800 group-hover:border-primary/50 transition-all ${stat.color}`}>
+              <div className={`p-3 rounded-xl bg-slate-50 border border-slate-100 group-hover:border-primary/50 transition-all ${stat.color}`}>
                 <stat.icon size={24} />
               </div>
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-950 px-2 py-1 rounded-full border border-slate-800">
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full border border-slate-100">
                 {stat.trend}
               </span>
             </div>
             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-3xl font-black mt-1 text-white">{stat.value}</h3>
+            <h3 className="text-3xl font-black mt-1 text-slate-900">{stat.value}</h3>
           </motion.div>
         ))}
       </div>
@@ -235,7 +237,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="corporate-card">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900">
               <CheckSquare className="text-primary" size={18} />
               Frequência Semanal
             </h3>
@@ -244,14 +246,14 @@ export default function Dashboard({ userRole }: DashboardProps) {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#FACC15' }}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  itemStyle={{ color: '#ca8a04' }}
                 />
-                <Bar dataKey="presenca" fill="#FACC15" radius={[6, 6, 0, 0]} barSize={40} />
+                <Bar dataKey="presenca" fill="#ca8a04" radius={[6, 6, 0, 0]} barSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -259,7 +261,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
 
         <div className="corporate-card">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900">
               <TrendingUp className="text-primary" size={18} />
               Indicador de Evolução
             </h3>
@@ -268,14 +270,14 @@ export default function Dashboard({ userRole }: DashboardProps) {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#64748b" fontSize={11} tickLine={false} axisLine={false} domain={[0, 10]} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#FACC15' }}
+                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  itemStyle={{ color: '#ca8a04' }}
                 />
-                <Line type="monotone" dataKey="score" stroke="#FACC15" strokeWidth={3} dot={{ fill: '#FACC15', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                <Line type="monotone" dataKey="score" stroke="#ca8a04" strokeWidth={3} dot={{ fill: '#ca8a04', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -286,24 +288,24 @@ export default function Dashboard({ userRole }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           <div className="corporate-card">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-white">
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-900">
               <Clock className="text-primary" size={18} />
               Agenda do Dia
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {agenda.length > 0 ? agenda.map((item, i) => (
-                <div key={i} className="p-5 bg-slate-900/50 rounded-2xl border border-slate-800 hover:border-primary/30 transition-all group">
+                <div key={i} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition-all group">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-primary font-black text-xl">{new Date(item.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                    <span className="px-2 py-1 bg-slate-950 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest border border-slate-800">
+                    <span className="px-2 py-1 bg-white rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest border border-slate-200">
                       {item.status === 'planned' ? 'Planejado' : 'Concluído'}
                     </span>
                   </div>
-                  <h4 className="font-bold text-slate-100 group-hover:text-primary transition-colors">{item.content || 'Sem conteúdo definido'}</h4>
+                  <h4 className="font-bold text-slate-800 group-hover:text-primary transition-colors">{item.content || 'Sem conteúdo definido'}</h4>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Aula Agendada</p>
                 </div>
               )) : (
-                <div className="md:col-span-2 p-8 text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                <div className="md:col-span-2 p-8 text-center bg-slate-50/30 rounded-2xl border border-dashed border-slate-200">
                   <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma aula agendada para hoje</p>
                 </div>
               )}
@@ -318,7 +320,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
                     <AlertCircle size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-white tracking-tight">ZONA DE PERIGO</h3>
+                    <h3 className="text-xl font-black text-slate-900 tracking-tight">ZONA DE PERIGO</h3>
                     <p className="text-[10px] text-rose-500/70 font-bold uppercase tracking-widest">Ações Irreversíveis de Administrador</p>
                   </div>
                 </div>
@@ -372,7 +374,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
         {userRole === 'admin' && (
           <div className="corporate-card">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+              <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900">
                 <ShieldCheck className="text-primary" size={18} />
                 Logins Realizados
               </h3>
@@ -398,7 +400,7 @@ export default function Dashboard({ userRole }: DashboardProps) {
                   <button 
                     onClick={() => setShowLogsConfirm(false)}
                     disabled={isClearing}
-                    className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                   >
                     NÃO
                   </button>
@@ -407,12 +409,12 @@ export default function Dashboard({ userRole }: DashboardProps) {
             </div>
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {loginLogs.map((log, i) => (
-                <div key={i} className="p-4 bg-slate-950 rounded-xl border border-slate-800 flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center text-primary border border-slate-800">
+                <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-4">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-primary border border-slate-200">
                     <Users size={20} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">{log.name || 'Usuário'}</h4>
+                    <h4 className="text-sm font-bold text-slate-800">{log.name || 'Usuário'}</h4>
                     <p className="text-[10px] text-slate-500 font-medium">{log.email}</p>
                     <span className="text-[9px] text-primary font-bold uppercase tracking-widest mt-1 block">
                       {log.role === 'admin' ? 'Administrador' : 'Instrutor'}

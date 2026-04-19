@@ -48,6 +48,16 @@ export default function Grades({ userRole }: { userRole: string | null }) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingGrade, setEditingGrade] = React.useState<Grade | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
+
+  React.useEffect(() => {
+    const handleQuickAdd = () => {
+      setEditingGrade(null);
+      setFormData({ studentId: '', subjectId: '', grade: '', date: new Date().toISOString().split('T')[0] });
+      setIsModalOpen(true);
+    };
+    window.addEventListener('app-quick-add', handleQuickAdd);
+    return () => window.removeEventListener('app-quick-add', handleQuickAdd);
+  }, []);
   
   const [formData, setFormData] = React.useState({
     studentId: '',
@@ -150,10 +160,10 @@ export default function Grades({ userRole }: { userRole: string | null }) {
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter">
+          <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter">
             NOTAS E <span className="text-primary">MÉDIAS</span>
           </h2>
-          <p className="text-slate-400 mt-1 text-sm md:text-base">Controle acadêmico e acompanhamento de desempenho.</p>
+          <p className="text-slate-500 mt-1 text-sm md:text-base">Controle acadêmico e acompanhamento de desempenho.</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -168,11 +178,11 @@ export default function Grades({ userRole }: { userRole: string | null }) {
         {/* Student List with Averages */}
         <div className="lg:col-span-1 space-y-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
               placeholder="Buscar aluno..."
-              className="input-corporate pl-12"
+              className="input-corporate pl-12 bg-white border-slate-200"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -180,14 +190,14 @@ export default function Grades({ userRole }: { userRole: string | null }) {
           
           <div className="space-y-3">
             {filteredStudents.map(student => (
-              <div key={student.id} className="corporate-card p-4 flex items-center justify-between group hover:border-primary/30 transition-all">
+              <div key={student.id} className="corporate-card p-4 flex items-center justify-between group hover:border-primary/30 transition-all bg-white shadow-sm">
                 <div>
-                  <h4 className="font-bold text-white group-hover:text-primary transition-colors">{student.name}</h4>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Média Geral</p>
+                  <h4 className="font-bold text-slate-800 group-hover:text-primary transition-colors">{student.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Média Geral</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-black text-primary flex items-center gap-2">
-                    <Calculator size={16} className="text-slate-500" />
+                    <Calculator size={16} className="text-slate-300" />
                     {calculateAverage(student.id)}
                   </div>
                 </div>
@@ -198,43 +208,43 @@ export default function Grades({ userRole }: { userRole: string | null }) {
 
         {/* Detailed Grades Table */}
         <div className="lg:col-span-2">
-          <div className="corporate-card overflow-hidden">
-            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <div className="corporate-card overflow-hidden bg-white shadow-sm">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <GraduationCap className="text-primary" size={20} />
                 Histórico de Notas
               </h3>
               <div className="flex items-center gap-2">
-                <Filter size={16} className="text-slate-500" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Filtrar</span>
+                <Filter size={16} className="text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar</span>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-900/50">
-                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">Aluno</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">Disciplina</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">Nota</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800">Data</th>
-                    <th className="p-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800 text-right">Ações</th>
+                  <tr className="bg-slate-50">
+                    <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Aluno</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Disciplina</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Nota</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Data</th>
+                    <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-slate-100">
                   {grades.map((grade) => (
-                    <tr key={grade.id} className="hover:bg-slate-900/30 transition-colors">
-                      <td className="p-4 text-sm font-medium text-slate-200">{getStudentName(grade.studentId)}</td>
-                      <td className="p-4 text-sm text-slate-400">{getSubjectName(grade.subjectId)}</td>
+                    <tr key={grade.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-sm font-medium text-slate-700">{getStudentName(grade.studentId)}</td>
+                      <td className="p-4 text-sm text-slate-500">{getSubjectName(grade.subjectId)}</td>
                       <td className="p-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-black ${
-                          grade.grade >= 7 ? 'bg-emerald-500/10 text-emerald-500' : 
+                          grade.grade >= 7 ? 'bg-emerald-50 text-emerald-600' : 
                           grade.grade >= 5 ? 'bg-primary/10 text-primary' : 
-                          'bg-rose-500/10 text-rose-500'
+                          'bg-rose-50 text-rose-600'
                         }`}>
                           {grade.grade.toFixed(1)}
                         </span>
                       </td>
-                      <td className="p-4 text-sm text-slate-500">
+                      <td className="p-4 text-sm text-slate-400">
                         {new Date(grade.date).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="p-4 text-right">
@@ -250,13 +260,13 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                               });
                               setIsModalOpen(true);
                             }}
-                            className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-primary transition-all"
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-primary transition-all"
                           >
                             <Edit2 size={16} />
                           </button>
                           <button 
                             onClick={() => handleDelete(grade.id)}
-                            className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-all"
+                            className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-all"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -274,14 +284,14 @@ export default function Grades({ userRole }: { userRole: string | null }) {
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="corporate-card max-w-md w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar"
+              className="corporate-card max-w-md w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar bg-white border-slate-200 shadow-2xl"
             >
-              <h3 className="text-xl md:text-2xl font-black text-white tracking-tighter">
+              <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">
                 {editingGrade ? 'EDITAR' : 'LANÇAR'} <span className="text-primary">NOTA</span>
               </h3>
               
@@ -290,12 +300,12 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aluno</label>
                   <select 
                     required
-                    className="input-corporate"
+                    className="input-corporate bg-slate-50"
                     value={formData.studentId}
                     onChange={(e) => setFormData({...formData, studentId: e.target.value})}
                   >
-                    <option value="">Selecione o aluno</option>
-                    {students.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    <option value="" className="bg-white">Selecione o aluno</option>
+                    {students.map(s => <option key={s.id} value={s.id} className="bg-white">{s.name}</option>)}
                   </select>
                 </div>
 
@@ -303,12 +313,12 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Disciplina</label>
                   <select 
                     required
-                    className="input-corporate"
+                    className="input-corporate bg-slate-50"
                     value={formData.subjectId}
                     onChange={(e) => setFormData({...formData, subjectId: e.target.value})}
                   >
-                    <option value="">Selecione a disciplina</option>
-                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    <option value="" className="bg-white">Selecione a disciplina</option>
+                    {subjects.map(s => <option key={s.id} value={s.id} className="bg-white">{s.name}</option>)}
                   </select>
                 </div>
 
@@ -321,7 +331,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                       min="0"
                       max="10"
                       required
-                      className="input-corporate"
+                      className="input-corporate bg-slate-50"
                       value={formData.grade}
                       onChange={(e) => setFormData({...formData, grade: e.target.value})}
                     />
@@ -331,7 +341,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                     <input 
                       type="date" 
                       required
-                      className="input-corporate"
+                      className="input-corporate bg-slate-50"
                       value={formData.date}
                       onChange={(e) => setFormData({...formData, date: e.target.value})}
                     />
@@ -345,7 +355,7 @@ export default function Grades({ userRole }: { userRole: string | null }) {
                       setIsModalOpen(false);
                       setEditingGrade(null);
                     }}
-                    className="flex-1 px-6 py-3 rounded-xl border border-slate-800 text-slate-400 font-bold uppercase tracking-widest text-xs hover:bg-slate-900 transition-all"
+                    className="flex-1 px-6 py-3 rounded-xl border border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-xs hover:bg-slate-50 transition-all"
                   >
                     Cancelar
                   </button>
