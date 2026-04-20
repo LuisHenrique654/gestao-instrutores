@@ -22,10 +22,13 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 
+import { BRANDING } from '../constants';
+
 interface AppSettings {
   id: string;
   companyName: string;
   companyLogoUrl: string;
+  instructorId?: string;
 }
 
 export default function Settings({ userRole }: { userRole: string | null }) {
@@ -36,8 +39,9 @@ export default function Settings({ userRole }: { userRole: string | null }) {
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [message, setMessage] = React.useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [formData, setFormData] = React.useState({
-    companyName: 'Cascavel Fire',
-    companyLogoUrl: ''
+    companyName: BRANDING.name,
+    companyLogoUrl: BRANDING.logo,
+    instructorId: 'global'
   });
 
   React.useEffect(() => {
@@ -46,8 +50,9 @@ export default function Settings({ userRole }: { userRole: string | null }) {
         const data = docSnap.data() as AppSettings;
         setSettings({ id: docSnap.id, ...data });
         setFormData({
-          companyName: data.companyName || 'Cascavel Fire',
-          companyLogoUrl: data.companyLogoUrl || ''
+          companyName: data.companyName || BRANDING.name,
+          companyLogoUrl: data.companyLogoUrl || BRANDING.logo,
+          instructorId: data.instructorId || 'global'
         });
       }
       setLoading(false);
@@ -55,6 +60,17 @@ export default function Settings({ userRole }: { userRole: string | null }) {
 
     return () => unsub();
   }, []);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, companyLogoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,18 +221,39 @@ export default function Settings({ userRole }: { userRole: string | null }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">URL da Logo (PNG/SVG)</label>
-                <div className="relative">
-                  <Upload className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input 
-                    type="url" 
-                    disabled={userRole !== 'admin'}
-                    className="input-corporate pl-12 bg-slate-50 border-slate-200 disabled:opacity-50"
-                    placeholder="https://exemplo.com/logo.png"
-                    value={formData.companyLogoUrl}
-                    onChange={(e) => setFormData({...formData, companyLogoUrl: e.target.value})}
-                  />
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Logo da Unidade (Upload ou URL)</label>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input 
+                      type="url" 
+                      disabled={userRole !== 'admin'}
+                      className="input-corporate pl-12 bg-slate-50 border-slate-200 disabled:opacity-50"
+                      placeholder="https://exemplo.com/logo.png"
+                      value={formData.companyLogoUrl}
+                      onChange={(e) => setFormData({...formData, companyLogoUrl: e.target.value})}
+                    />
+                  </div>
+                  {userRole === 'admin' && (
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <label 
+                        htmlFor="logo-upload"
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 cursor-pointer transition-all shadow-sm"
+                      >
+                        <Upload size={16} />
+                        Upload Arquivo
+                      </label>
+                    </div>
+                  )}
                 </div>
+                <p className="text-[9px] text-slate-400 mt-2 ml-1">* O upload converterá a imagem para um formato definitivo no sistema.</p>
               </div>
             </div>
 

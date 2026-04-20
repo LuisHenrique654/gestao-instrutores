@@ -21,12 +21,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { db } from './firebase';
 import { collection, query, where, onSnapshot, getDoc, doc, setDoc } from 'firebase/firestore';
 
+import { BRANDING } from './constants';
+
 export default function App() {
   const [user, setUser] = React.useState<User | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('dashboard');
-  const [appSettings, setAppSettings] = React.useState<any>(null);
+  const [appSettings, setAppSettings] = React.useState<any>({
+    companyName: BRANDING.name,
+    companyLogoUrl: BRANDING.logo
+  });
   const [selectedInstructorId, setSelectedInstructorId] = React.useState<string | null>(null);
   const [loginError, setLoginError] = React.useState<string | null>(null);
   const [loginMode, setLoginMode] = React.useState<'login' | 'signup'>('login');
@@ -61,7 +66,11 @@ export default function App() {
         // Load global settings (logo, name)
         const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
           if (docSnap.exists()) {
-            setAppSettings(docSnap.data());
+            const data = docSnap.data();
+            setAppSettings({
+              companyName: data.companyName || BRANDING.name,
+              companyLogoUrl: data.companyLogoUrl || BRANDING.logo
+            });
           }
         }, (error) => {
           console.error("Global Settings Snapshot Error:", error);
@@ -174,14 +183,18 @@ export default function App() {
         >
           <div className="space-y-3">
             <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-primary/20 overflow-hidden">
-              {appSettings?.companyLogoUrl ? (
-                <img src={appSettings.companyLogoUrl} alt="Logo" className="w-full h-full object-contain p-2" referrerPolicy="no-referrer" />
-              ) : (
-                <ShieldCheck className="text-white" size={36} />
-              )}
+              <img 
+                src={appSettings?.companyLogoUrl || BRANDING.logo} 
+                alt="Logo" 
+                className="w-full h-full object-contain p-2" 
+                referrerPolicy="no-referrer" 
+              />
             </div>
             <h1 className="text-4xl font-black text-slate-950 tracking-tighter">
-              {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
+              {(appSettings?.companyName || BRANDING.name).split(' ')[0].toUpperCase()} 
+              <span className="text-primary ml-2">
+                {(appSettings?.companyName || BRANDING.name).split(' ').slice(1).join(' ').toUpperCase()}
+              </span>
             </h1>
             <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Enterprise Instructor Management</p>
           </div>

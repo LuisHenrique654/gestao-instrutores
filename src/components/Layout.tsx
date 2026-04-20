@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { BRANDING } from '../constants';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -101,15 +102,19 @@ export default function Layout({
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-[60]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-            {appSettings?.companyLogoUrl ? (
-              <img src={appSettings.companyLogoUrl} alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
-            ) : (
-              <ShieldCheck className="text-slate-950" size={20} />
-            )}
+            <img 
+              src={appSettings?.companyLogoUrl || BRANDING.logo} 
+              alt="Logo" 
+              className="w-full h-full object-contain p-1" 
+              referrerPolicy="no-referrer" 
+            />
           </div>
           <div className="flex flex-col justify-center">
             <h1 className="text-lg font-bold text-slate-950 tracking-tight truncate leading-tight">
-              {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
+              {(appSettings?.companyName || BRANDING.name).split(' ')[0].toUpperCase()} 
+              <span className="text-primary font-black ml-1">
+                {(appSettings?.companyName || BRANDING.name).split(' ').slice(1).join(' ').toUpperCase()}
+              </span>
             </h1>
             <p className="text-[9px] text-primary font-bold tracking-[0.1em] -mt-0.5">PORTAL DO INSTRUTOR</p>
           </div>
@@ -153,15 +158,19 @@ export default function Layout({
               className="flex items-center gap-3 overflow-hidden"
             >
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                {appSettings?.companyLogoUrl ? (
-                  <img src={appSettings.companyLogoUrl} alt="Logo" className="w-full h-full object-contain p-1" referrerPolicy="no-referrer" />
-                ) : (
-                  <ShieldCheck className="text-slate-950" size={20} />
-                )}
+                <img 
+                  src={appSettings?.companyLogoUrl || BRANDING.logo} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-1" 
+                  referrerPolicy="no-referrer" 
+                />
               </div>
               <div className="flex flex-col justify-center overflow-hidden">
                 <h1 className="text-xl font-bold text-slate-950 tracking-tight truncate leading-tight">
-                  {appSettings?.companyName?.split(' ')[0].toUpperCase() || 'CASCAVEL'} <span className="text-primary font-black">{appSettings?.companyName?.split(' ').slice(1).join(' ').toUpperCase() || 'FIRE'}</span>
+                  {(appSettings?.companyName || BRANDING.name).split(' ')[0].toUpperCase()} 
+                  <span className="text-primary font-black ml-1">
+                    {(appSettings?.companyName || BRANDING.name).split(' ').slice(1).join(' ').toUpperCase()}
+                  </span>
                 </h1>
                 <p className="text-[10px] text-primary font-bold tracking-[0.2em] mt-0.5">PORTAL DO INSTRUTOR</p>
               </div>
