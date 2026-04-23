@@ -44,12 +44,24 @@ export default function App() {
   const [showPassword, setShowPassword] = React.useState(false);
   
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubRole: (() => void) | null = null;
+    let unsubSettings: (() => void) | null = null;
+
+    // Safety timeout to ensure the app eventually shows something
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      
+      // Cleanup previous observers
+      if (unsubRole) unsubRole();
+      if (unsubSettings) unsubSettings();
       
       if (user) {
         // Load user role with onSnapshot instead of getDoc for better offline behavior
-        const unsubRole = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        unsubRole = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
           if (docSnap.exists()) {
             setUserRole(docSnap.data().role);
           } else {
@@ -59,14 +71,16 @@ export default function App() {
           }
           // Complete loading when we have the role
           setLoading(false);
+          clearTimeout(safetyTimeout);
         }, (error) => {
           console.error("User Role Snapshot Error:", error);
-          // If it fails (e.g. permission or unexpected error), at least let them in if they are authenticated
+          // If it fails, at least let them in if they are authenticated
           setLoading(false);
+          clearTimeout(safetyTimeout);
         });
 
         // Load global settings
-        const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+        unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setAppSettings({
@@ -77,13 +91,10 @@ export default function App() {
         }, (error) => {
           console.error("Global Settings Snapshot Error:", error);
         });
-        
-        return () => {
-          unsubRole();
-          unsubSettings();
-        };
       } else {
         setLoading(false);
+        clearTimeout(safetyTimeout);
+        setUserRole(null);
       }
     });
 
@@ -91,8 +102,12 @@ export default function App() {
     const updateOnlineStatus = () => setIsOnline(navigator.onLine);
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
+
     return () => {
       unsubscribe();
+      if (unsubRole) unsubRole();
+      if (unsubSettings) unsubSettings();
+      clearTimeout(safetyTimeout);
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
     };
