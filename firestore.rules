@@ -127,6 +127,12 @@ service cloud.firestore {
              (data.instructorId == request.auth.uid || isAdmin());
     }
 
+    function isValidSpecialization(data) {
+      return hasRequiredFields(['instructorId', 'name']) &&
+             (data.instructorId == request.auth.uid || isAdmin()) &&
+             validStringLength('name', 1, 150);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -203,6 +209,13 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin() && (settingId == 'global' || request.auth.uid == settingId);
+    }
+
+    match /specializations/{specId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
+      allow create: if isAuthenticated() && isValidSpecialization(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data) || isAdmin()) && isValidSpecialization(request.resource.data);
+      allow delete: if isAuthenticated() && (isOwner(resource.data) || isAdmin());
     }
 
     // Default deny

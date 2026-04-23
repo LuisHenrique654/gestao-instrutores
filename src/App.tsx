@@ -16,6 +16,7 @@ import Courses from './components/Courses';
 import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import Library from './components/Library';
+import Specializations from './components/Specializations';
 import { LogIn, ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from './firebase';
@@ -416,6 +417,7 @@ export default function App() {
       case 'grades': return <Grades {...props} />;
       case 'courses': return <Courses {...props} />;
       case 'schedule': return <Schedule {...props} />;
+      case 'specialization': return <Specializations {...props} />;
       case 'library': return <Library {...props} />;
       case 'settings': return <Settings {...props} />;
       default: return <Dashboard {...props} />;

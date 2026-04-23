@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Library,
   Settings as SettingsIcon,
-  Plus
+  Plus,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db } from '../firebase';
@@ -75,6 +76,7 @@ export default function Layout({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'students', label: 'Alunos', icon: Users },
     { id: 'attendance', label: 'Presença', icon: CheckSquare },
+    { id: 'specialization', label: 'Especialização', icon: Award },
     { id: 'reports', label: 'Relatórios', icon: FileText },
     { id: 'grades', label: 'Notas', icon: GraduationCap },
     { id: 'courses', label: 'Disciplinas', icon: BookOpen },
@@ -94,7 +96,7 @@ export default function Layout({
     }
   };
 
-  const showFAB = ['students', 'attendance', 'reports', 'grades', 'courses', 'schedule', 'library'].includes(activeTab);
+  const showFAB = ['students', 'attendance', 'reports', 'grades', 'courses', 'schedule', 'library', 'specialization'].includes(activeTab);
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">

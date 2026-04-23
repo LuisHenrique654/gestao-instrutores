@@ -116,6 +116,19 @@
         "companyName": { "type": "string" },
         "companyLogoUrl": { "type": "string" }
       }
+    },
+    "Specialization": {
+      "title": "Specialization",
+      "description": "Advanced technical training modules.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name"]
     }
   },
   "firestore": {
@@ -128,6 +141,7 @@
     "/grades/{gradeId}": { "schema": "Grade", "description": "Grades collection" },
     "/library/{itemId}": { "schema": "LibraryItem", "description": "Library resources" },
     "/users/{userId}": { "schema": "User", "description": "User profiles" },
-    "/settings/{settingId}": { "schema": "Settings", "description": "App settings" }
+    "/settings/{settingId}": { "schema": "Settings", "description": "App settings" },
+    "/specializations/{specId}": { "schema": "Specialization", "description": "Specializations collection" }
   }
 }

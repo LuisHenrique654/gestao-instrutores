@@ -32,6 +32,15 @@ export interface Student {
   }[];
 }
 
+export interface Specialization {
+  id: string;
+  name: string;
+  description?: string;
+  requirements?: string;
+  instructorId?: string;
+  createdAt: string;
+}
+
 export interface Class {
   id: string;
   subjectId: string;
