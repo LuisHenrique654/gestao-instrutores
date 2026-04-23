@@ -12,7 +12,10 @@ import {
   Copy,
   ChevronUp,
   ChevronDown,
-  GripVertical
+  GripVertical,
+  Share2,
+  Users as UsersIcon,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -42,6 +45,10 @@ export default function Courses({
   const [selectedCourse, setSelectedCourse] = React.useState<Course | null>(null);
   const [isCourseModalOpen, setIsCourseModalOpen] = React.useState(false);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = React.useState(false);
+  const [isCloneModalOpen, setIsCloneModalOpen] = React.useState(false);
+  const [courseToClone, setCourseToClone] = React.useState<Course | null>(null);
+  const [instructors, setInstructors] = React.useState<any[]>([]);
+  const [isCloning, setIsCloning] = React.useState(false);
   const [editingCourse, setEditingCourse] = React.useState<Course | null>(null);
   const [editingSubject, setEditingSubject] = React.useState<Subject | null>(null);
 
@@ -84,6 +91,15 @@ export default function Courses({
       unsubscribeSubjects();
     };
   }, [userRole, effectiveInstructorId]);
+
+  React.useEffect(() => {
+    if (userRole === 'admin') {
+      const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        setInstructors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      return () => unsubscribe();
+    }
+  }, [userRole]);
 
   const handleCourseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,6 +169,39 @@ export default function Courses({
       courseId: subject.courseId
     });
     setIsSubjectModalOpen(true);
+  };
+
+  const handleCloneToInstructor = async (targetInstructorId: string) => {
+    if (!courseToClone || !auth.currentUser) return;
+    setIsCloning(true);
+    try {
+      // 1. Clone the course
+      const courseData = {
+        name: courseToClone.name,
+        description: courseToClone.description || '',
+        instructorId: targetInstructorId
+      };
+      const newCourseDoc = await addDoc(collection(db, 'courses'), courseData);
+      
+      // 2. Clone all subjects related to this course
+      const relatedSubjects = subjects.filter(s => s.courseId === courseToClone.id);
+      for (const s of relatedSubjects) {
+        await addDoc(collection(db, 'subjects'), {
+          name: s.name,
+          description: s.description || '',
+          courseId: newCourseDoc.id,
+          order: s.order || 0,
+          instructorId: targetInstructorId
+        });
+      }
+      
+      setIsCloneModalOpen(false);
+      setCourseToClone(null);
+    } catch (error) {
+      console.error("Error cloning course:", error);
+    } finally {
+      setIsCloning(false);
+    }
   };
 
   const moveSubject = async (subject: Subject, direction: 'up' | 'down') => {
@@ -248,6 +297,15 @@ export default function Courses({
                   </p>
                 </button>
                 <div className="absolute top-3 right-3 flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+                  {userRole === 'admin' && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setCourseToClone(course); setIsCloneModalOpen(true); }}
+                      className={`p-2 rounded-xl transition-colors ${selectedCourse?.id === course.id ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-50 border border-slate-200 text-amber-600 hover:bg-slate-100'}`}
+                      title="Clonar para outro Instrutor"
+                    >
+                      <Share2 size={12} />
+                    </button>
+                  )}
                   <button 
                     onClick={(e) => { e.stopPropagation(); duplicateCourse(course); }}
                     className={`p-2 rounded-xl transition-colors ${selectedCourse?.id === course.id ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100'}`}
@@ -506,6 +564,79 @@ export default function Courses({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Clone Modal */}
+      <AnimatePresence>
+        {isCloneModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isCloning && setIsCloneModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 50, scale: 0.9 }}
+              className="relative bg-white border border-slate-200 w-full max-w-md rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-slate-200/50 max-h-[80vh] overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase line-clamp-1">
+                  CLONAR <span className="text-primary">CURSO</span>
+                </h3>
+                <button onClick={() => setIsCloneModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Você está prestes a clonar o curso <strong className="font-bold">"{courseToClone?.name}"</strong> e todas as suas disciplinas vinculadas para outro instrutor.
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2 mb-6">
+                {instructors.filter(i => i.id !== (courseToClone?.instructorId || auth.currentUser?.uid)).map(instructor => (
+                  <button
+                    key={instructor.id}
+                    disabled={isCloning}
+                    onClick={() => handleCloneToInstructor(instructor.id)}
+                    className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                        <UsersIcon size={20} />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-slate-800 text-sm">{instructor.name || 'Sem nome'}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{instructor.email}</p>
+                      </div>
+                    </div>
+                    {isCloning ? (
+                       <Loader2 className="animate-spin text-primary" size={18} />
+                    ) : (
+                      <Copy size={16} className="text-slate-200 group-hover:text-primary transition-colors" />
+                    )}
+                  </button>
+                ))}
+                {instructors.length <= 1 && (
+                  <p className="text-center py-8 text-slate-400 text-sm">Nenhum outro instrutor encontrado.</p>
+                )}
+              </div>
+
+              <button 
+                onClick={() => setIsCloneModalOpen(false)}
+                className="w-full btn-corporate-outline"
+                disabled={isCloning}
+              >
+                Cancelar
+              </button>
             </motion.div>
           </div>
         )}

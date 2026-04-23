@@ -25,6 +25,11 @@ export interface Student {
   photoUrl?: string;
   courseIds: string[];
   instructorId?: string;
+  documents?: {
+    name: string;
+    url: string;
+    type: string;
+  }[];
 }
 
 export interface Class {

@@ -19,7 +19,10 @@ import {
   Loader2,
   CreditCard,
   Calendar,
-  Copy
+  Copy,
+  User as UserIcon,
+  ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -46,6 +49,8 @@ export default function Students({
 }) {
   const [students, setStudents] = React.useState<Student[]>([]);
   const [courses, setCourses] = React.useState<Course[]>([]);
+  const [instructors, setInstructors] = React.useState<any[]>([]);
+  const [expandedGroups, setExpandedGroups] = React.useState<Record<string, boolean>>({});
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [editingStudent, setEditingStudent] = React.useState<Student | null>(null);
@@ -103,6 +108,21 @@ export default function Students({
       unsubscribeCourses();
     };
   }, [userRole, effectiveInstructorId]);
+
+  React.useEffect(() => {
+    if (userRole === 'admin') {
+      const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setInstructors(users);
+        
+        // Initialize expanded groups
+        const groups: Record<string, boolean> = { 'all': true };
+        users.forEach(u => { groups[u.id] = true; });
+        setExpandedGroups(groups);
+      });
+      return () => unsubscribe();
+    }
+  }, [userRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +221,25 @@ export default function Students({
     s.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getInstructorName = (id?: string) => {
+    if (!id) return 'Não Atribuído';
+    return instructors.find(i => i.id === id)?.name || 'Instrutor Desconhecido';
+  };
+
+  const studentsByInstructor = React.useMemo(() => {
+    const groups: Record<string, Student[]> = {};
+    filteredStudents.forEach(student => {
+      const id = student.instructorId || 'unknown';
+      if (!groups[id]) groups[id] = [];
+      groups[id].push(student);
+    });
+    return groups;
+  }, [filteredStudents]);
+
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -238,119 +277,63 @@ export default function Students({
       </div>
 
       {/* Students List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {filteredStudents.map((student) => (
-            <motion.div
-              key={student.id}
-              layout
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="corporate-card group"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shadow-inner group-hover:bg-primary/5 transition-colors">
-                    {student.photoUrl ? (
-                      <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    ) : (
-                      <Users size={32} className="text-slate-300" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg text-slate-800 group-hover:text-primary transition-colors">{student.name}</h4>
-                    <p className="text-[10px] text-primary font-bold uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10 inline-block">
-                      {student.courseIds.length > 0 
-                        ? `${student.courseIds.length} Curso(s)` 
-                        : 'Sem curso'}
-                    </p>
-                  </div>
+      <div className="space-y-12">
+        {userRole === 'admin' && !selectedInstructorId ? (
+          (Object.entries(studentsByInstructor) as [string, Student[]][]).map(([instrId, instrStudents]) => (
+            <div key={instrId} className="space-y-6">
+              <button 
+                onClick={() => toggleGroup(instrId)}
+                className="flex items-center gap-3 w-full text-left group"
+              >
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                  <UserIcon size={20} />
                 </div>
-                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
-                  <button 
-                    onClick={() => duplicateStudent(student)}
-                    className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
-                    title="Duplicar Aluno"
-                  >
-                    <Copy size={16} />
-                  </button>
-                  <button 
-                    onClick={() => openEditModal(student)}
-                    className="p-2 hover:bg-slate-100 rounded-xl text-blue-600 transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(student.id)}
-                    className="p-2 hover:bg-slate-100 rounded-xl text-rose-600 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                <div className="flex-1">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tighter uppercase">
+                    INSTRUTOR: <span className="text-primary">{getInstructorName(instrId === 'unknown' ? undefined : instrId)}</span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    {instrStudents.length} Aluno(s) registrados
+                  </p>
                 </div>
-              </div>
+                {expandedGroups[instrId] ? <ChevronUpIcon size={20} className="text-slate-300" /> : <ChevronDownIcon size={20} className="text-slate-300" />}
+              </button>
 
-              {/* Documents Preview */}
-              {student.documents && student.documents.length > 0 && (
-                <div className="mb-4 space-y-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
-                    <Paperclip size={10} className="text-primary" />
-                    Documentos ({student.documents.length})
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {student.documents.slice(0, 2).map((doc, idx) => (
-                      <a 
-                        key={idx}
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-500 hover:text-primary hover:border-primary/50 transition-all max-w-[120px] shadow-sm"
-                      >
-                        <FileText size={12} className="shrink-0" />
-                        <span className="truncate">{doc.name}</span>
-                      </a>
+              <AnimatePresence>
+                {expandedGroups[instrId] && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-hidden"
+                  >
+                    {instrStudents.map((student) => (
+                      <StudentCard 
+                        key={student.id} 
+                        student={student} 
+                        onEdit={openEditModal} 
+                        onDelete={handleDelete} 
+                        onDuplicate={duplicateStudent}
+                      />
                     ))}
-                    {student.documents.length > 2 && (
-                      <button 
-                        onClick={() => openEditModal(student)}
-                        className="text-[10px] text-slate-400 hover:text-primary font-bold underline decoration-slate-200"
-                      >
-                        +{student.documents.length - 2} mais
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-3 text-sm text-slate-500">
-                  <Mail size={14} className="text-primary" />
-                  <span className="truncate">{student.email || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-slate-500">
-                  <Phone size={14} className="text-primary" />
-                  <span>{student.phone || 'N/A'}</span>
-                </div>
-                {student.birthDate && (
-                  <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Calendar size={14} className="text-primary" />
-                    <span>Nasc: {new Date(student.birthDate).toLocaleDateString('pt-BR')}</span>
-                  </div>
+                  </motion.div>
                 )}
-                {(student.cpf || student.rg) && (
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium pt-1">
-                    <CreditCard size={12} className="text-slate-300" />
-                    <span>
-                      {student.cpf ? `CPF: ${student.cpf}` : ''}
-                      {student.cpf && student.rg ? ' | ' : ''}
-                      {student.rg ? `RG: ${student.rg}` : ''}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              </AnimatePresence>
+            </div>
+          ))
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredStudents.map((student) => (
+              <StudentCard 
+                key={student.id} 
+                student={student} 
+                onEdit={openEditModal} 
+                onDelete={handleDelete} 
+                onDuplicate={duplicateStudent}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal */}
@@ -569,5 +552,125 @@ export default function Students({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+interface StudentCardProps {
+  key?: string | number;
+  student: Student;
+  onEdit: (s: Student) => void;
+  onDelete: (id: string) => Promise<void>;
+  onDuplicate: (s: Student) => void;
+}
+
+function StudentCard({ student, onEdit, onDelete, onDuplicate }: StudentCardProps) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="corporate-card group"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center shadow-inner group-hover:bg-primary/5 transition-colors">
+            {student.photoUrl ? (
+              <img src={student.photoUrl} alt={student.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <Users size={32} className="text-slate-300" />
+            )}
+          </div>
+          <div>
+            <h4 className="font-bold text-lg text-slate-800 group-hover:text-primary transition-colors">{student.name}</h4>
+            <p className="text-[10px] text-primary font-bold uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10 inline-block">
+              {student.courseIds.length > 0 
+                ? `${student.courseIds.length} Curso(s)` 
+                : 'Sem curso'}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+          <button 
+            onClick={() => onDuplicate(student)}
+            className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
+            title="Duplicar Aluno"
+          >
+            <Copy size={16} />
+          </button>
+          <button 
+            onClick={() => onEdit(student)}
+            className="p-2 hover:bg-slate-100 rounded-xl text-blue-600 transition-colors"
+          >
+            <Edit2 size={16} />
+          </button>
+          <button 
+            onClick={() => onDelete(student.id)}
+            className="p-2 hover:bg-slate-100 rounded-xl text-rose-600 transition-colors"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* Documents Preview */}
+      {student.documents && student.documents.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+            <Paperclip size={10} className="text-primary" />
+            Documentos ({student.documents.length})
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {student.documents.slice(0, 2).map((doc, idx) => (
+              <a 
+                key={idx}
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-500 hover:text-primary hover:border-primary/50 transition-all max-w-[120px] shadow-sm"
+              >
+                <FileText size={12} className="shrink-0" />
+                <span className="truncate">{doc.name}</span>
+              </a>
+            ))}
+            {student.documents.length > 2 && (
+              <button 
+                onClick={() => onEdit(student)}
+                className="text-[10px] text-slate-400 hover:text-primary font-bold underline decoration-slate-200"
+              >
+                +{student.documents.length - 2} mais
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2 mt-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <Mail size={14} className="text-primary" />
+          <span className="truncate">{student.email || 'N/A'}</span>
+        </div>
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <Phone size={14} className="text-primary" />
+          <span>{student.phone || 'N/A'}</span>
+        </div>
+        {student.birthDate && (
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <Calendar size={14} className="text-primary" />
+            <span>Nasc: {new Date(student.birthDate).toLocaleDateString('pt-BR')}</span>
+          </div>
+        )}
+        {(student.cpf || student.rg) && (
+          <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium pt-1">
+            <CreditCard size={12} className="text-slate-300" />
+            <span>
+              {student.cpf ? `CPF: ${student.cpf}` : ''}
+              {student.cpf && student.rg ? ' | ' : ''}
+              {student.rg ? `RG: ${student.rg}` : ''}
+            </span>
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 }
