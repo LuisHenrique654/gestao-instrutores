@@ -18,6 +18,8 @@ export interface Student {
   name: string;
   email?: string;
   phone?: string;
+  cpf?: string;
+  rg?: string;
   photoUrl?: string;
   courseIds: string[];
   instructorId?: string;

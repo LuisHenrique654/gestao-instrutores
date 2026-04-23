@@ -16,7 +16,8 @@ import {
   Paperclip,
   ExternalLink,
   Upload,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -55,6 +56,8 @@ export default function Students({
     name: '',
     email: '',
     phone: '',
+    cpf: '',
+    rg: '',
     photoUrl: '',
     courseIds: [] as string[],
     documents: [] as { name: string, url: string, type: string }[]
@@ -137,7 +140,7 @@ export default function Students({
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', phone: '', photoUrl: '', courseIds: [], documents: [] });
+    setFormData({ name: '', email: '', phone: '', cpf: '', rg: '', photoUrl: '', courseIds: [], documents: [] });
     setEditingStudent(null);
   };
 
@@ -147,6 +150,8 @@ export default function Students({
       name: student.name,
       email: student.email || '',
       phone: student.phone || '',
+      cpf: student.cpf || '',
+      rg: student.rg || '',
       photoUrl: student.photoUrl || '',
       courseIds: student.courseIds || [],
       documents: (student as any).documents || []
@@ -299,6 +304,16 @@ export default function Students({
                   <Phone size={14} className="text-primary" />
                   <span>{student.phone || 'N/A'}</span>
                 </div>
+                {(student.cpf || student.rg) && (
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium pt-1">
+                    <CreditCard size={12} className="text-slate-300" />
+                    <span>
+                      {student.cpf ? `CPF: ${student.cpf}` : ''}
+                      {student.cpf && student.rg ? ' | ' : ''}
+                      {student.rg ? `RG: ${student.rg}` : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -362,6 +377,28 @@ export default function Students({
                       placeholder="(00) 00000-0000"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">CPF</label>
+                    <input 
+                      type="text" 
+                      className="input-corporate w-full bg-slate-50"
+                      placeholder="000.000.000-00"
+                      value={formData.cpf}
+                      onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">RG</label>
+                    <input 
+                      type="text" 
+                      className="input-corporate w-full bg-slate-50"
+                      placeholder="00.000.000-0"
+                      value={formData.rg}
+                      onChange={(e) => setFormData({...formData, rg: e.target.value})}
                     />
                   </div>
                 </div>
