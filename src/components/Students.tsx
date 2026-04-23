@@ -17,7 +17,8 @@ import {
   ExternalLink,
   Upload,
   Loader2,
-  CreditCard
+  CreditCard,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -58,6 +59,7 @@ export default function Students({
     phone: '',
     cpf: '',
     rg: '',
+    birthDate: '',
     photoUrl: '',
     courseIds: [] as string[],
     documents: [] as { name: string, url: string, type: string }[]
@@ -140,7 +142,7 @@ export default function Students({
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', phone: '', cpf: '', rg: '', photoUrl: '', courseIds: [], documents: [] });
+    setFormData({ name: '', email: '', phone: '', cpf: '', rg: '', birthDate: '', photoUrl: '', courseIds: [], documents: [] });
     setEditingStudent(null);
   };
 
@@ -152,6 +154,7 @@ export default function Students({
       phone: student.phone || '',
       cpf: student.cpf || '',
       rg: student.rg || '',
+      birthDate: student.birthDate || '',
       photoUrl: student.photoUrl || '',
       courseIds: student.courseIds || [],
       documents: (student as any).documents || []
@@ -304,6 +307,12 @@ export default function Students({
                   <Phone size={14} className="text-primary" />
                   <span>{student.phone || 'N/A'}</span>
                 </div>
+                {student.birthDate && (
+                  <div className="flex items-center gap-3 text-sm text-slate-500">
+                    <Calendar size={14} className="text-primary" />
+                    <span>Nasc: {new Date(student.birthDate).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                )}
                 {(student.cpf || student.rg) && (
                   <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium pt-1">
                     <CreditCard size={12} className="text-slate-300" />
@@ -401,6 +410,15 @@ export default function Students({
                       onChange={(e) => setFormData({...formData, rg: e.target.value})}
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Data de Nascimento</label>
+                  <input 
+                    type="date" 
+                    className="input-corporate w-full bg-slate-50"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">URL da Foto</label>

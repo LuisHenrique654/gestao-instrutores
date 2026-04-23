@@ -20,6 +20,7 @@ export interface Student {
   phone?: string;
   cpf?: string;
   rg?: string;
+  birthDate?: string;
   photoUrl?: string;
   courseIds: string[];
   instructorId?: string;
