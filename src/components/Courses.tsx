@@ -205,23 +205,37 @@ export default function Courses({
   };
 
   const moveSubject = async (subject: Subject, direction: 'up' | 'down') => {
-    const sortedSubjects = [...courseSubjects].sort((a, b) => (a.order || 0) - (b.order || 0));
-    const index = sortedSubjects.findIndex(s => s.id === subject.id);
-    
-    if (direction === 'up' && index > 0) {
-      const prevSubject = sortedSubjects[index - 1];
-      const currentOrder = subject.order ?? index;
-      const prevOrder = prevSubject.order ?? (index - 1);
+    const list = [...courseSubjects];
+    const index = list.findIndex(s => s.id === subject.id);
+    if (index === -1) return;
+
+    let targetIndex = -1;
+    if (direction === 'up' && index > 0) targetIndex = index - 1;
+    if (direction === 'down' && index < list.length - 1) targetIndex = index + 1;
+
+    if (targetIndex !== -1) {
+      const targetSubject = list[targetIndex];
       
-      await updateDoc(doc(db, 'subjects', subject.id), { order: prevOrder });
-      await updateDoc(doc(db, 'subjects', prevSubject.id), { order: currentOrder });
-    } else if (direction === 'down' && index < sortedSubjects.length - 1) {
-      const nextSubject = sortedSubjects[index + 1];
+      // If they have the same order (or no order), we need to force a sequence
+      // We'll use their current indices as a baseline for the swap
       const currentOrder = subject.order ?? index;
-      const nextOrder = nextSubject.order ?? (index + 1);
+      const targetOrder = targetSubject.order ?? targetIndex;
       
-      await updateDoc(doc(db, 'subjects', subject.id), { order: nextOrder });
-      await updateDoc(doc(db, 'subjects', nextSubject.id), { order: currentOrder });
+      let newSubjectOrder = targetOrder;
+      let newTargetOrder = currentOrder;
+
+      // If swapping would result in the same order, force a gap
+      if (newSubjectOrder === newTargetOrder) {
+        if (direction === 'up') newSubjectOrder -= 1;
+        else newSubjectOrder += 1;
+      }
+
+      try {
+        await updateDoc(doc(db, 'subjects', subject.id), { order: newSubjectOrder });
+        await updateDoc(doc(db, 'subjects', targetSubject.id), { order: newTargetOrder });
+      } catch (error) {
+        console.error("Error moving subject:", error);
+      }
     }
   };
 
