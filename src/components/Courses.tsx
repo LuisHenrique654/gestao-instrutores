@@ -8,7 +8,11 @@ import {
   X, 
   Check,
   ChevronRight,
-  Info
+  Info,
+  Copy,
+  ChevronUp,
+  ChevronDown,
+  GripVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -117,13 +121,58 @@ export default function Courses({
       if (editingSubject) {
         await updateDoc(doc(db, 'subjects', editingSubject.id), data);
       } else {
-        await addDoc(collection(db, 'subjects'), data);
+        // Find max order for new subject
+        const maxOrder = courseSubjects.reduce((max, s) => Math.max(max, s.order || 0), -1);
+        await addDoc(collection(db, 'subjects'), {
+          ...data,
+          order: maxOrder + 1
+        });
       }
       setIsSubjectModalOpen(false);
       setSubjectForm({ name: '', description: '', courseId: selectedCourse?.id || '' });
       setEditingSubject(null);
     } catch (error) {
       console.error("Error saving subject:", error);
+    }
+  };
+
+  const duplicateCourse = (course: Course) => {
+    setEditingCourse(null);
+    setCourseForm({
+      name: `${course.name} (Cópia)`,
+      description: course.description || ''
+    });
+    setIsCourseModalOpen(true);
+  };
+
+  const duplicateSubject = (subject: Subject) => {
+    setEditingSubject(null);
+    setSubjectForm({
+      name: `${subject.name} (Cópia)`,
+      description: subject.description || '',
+      courseId: subject.courseId
+    });
+    setIsSubjectModalOpen(true);
+  };
+
+  const moveSubject = async (subject: Subject, direction: 'up' | 'down') => {
+    const sortedSubjects = [...courseSubjects].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const index = sortedSubjects.findIndex(s => s.id === subject.id);
+    
+    if (direction === 'up' && index > 0) {
+      const prevSubject = sortedSubjects[index - 1];
+      const currentOrder = subject.order ?? index;
+      const prevOrder = prevSubject.order ?? (index - 1);
+      
+      await updateDoc(doc(db, 'subjects', subject.id), { order: prevOrder });
+      await updateDoc(doc(db, 'subjects', prevSubject.id), { order: currentOrder });
+    } else if (direction === 'down' && index < sortedSubjects.length - 1) {
+      const nextSubject = sortedSubjects[index + 1];
+      const currentOrder = subject.order ?? index;
+      const nextOrder = nextSubject.order ?? (index + 1);
+      
+      await updateDoc(doc(db, 'subjects', subject.id), { order: nextOrder });
+      await updateDoc(doc(db, 'subjects', nextSubject.id), { order: currentOrder });
     }
   };
 
@@ -150,7 +199,9 @@ export default function Courses({
     }
   };
 
-  const courseSubjects = subjects.filter(s => s.courseId === selectedCourse?.id);
+  const courseSubjects = subjects
+    .filter(s => s.courseId === selectedCourse?.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -198,10 +249,17 @@ export default function Courses({
                 </button>
                 <div className="absolute top-3 right-3 flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
                   <button 
+                    onClick={(e) => { e.stopPropagation(); duplicateCourse(course); }}
+                    className={`p-2 rounded-xl transition-colors ${selectedCourse?.id === course.id ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                    title="Duplicar Curso"
+                  >
+                    <Copy size={12} />
+                  </button>
+                  <button 
                     onClick={(e) => { e.stopPropagation(); setEditingCourse(course); setCourseForm({ name: course.name, description: course.description || '' }); setIsCourseModalOpen(true); }}
                     className={`p-2 rounded-xl transition-colors ${selectedCourse?.id === course.id ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-50 border border-slate-200 text-blue-600 hover:bg-slate-100'}`}
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={12} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDeleteCourse(course.id); }}
@@ -239,30 +297,58 @@ export default function Courses({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {courseSubjects.map((subject) => (
-                  <div key={subject.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition-all group">
-                    <div className="flex justify-between items-start mb-5">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl text-primary shadow-sm">
-                        <Layers size={20} />
-                      </div>
-                      <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
-                        <button 
-                          onClick={() => { setEditingSubject(subject); setSubjectForm({ name: subject.name, description: subject.description || '', courseId: subject.courseId }); setIsSubjectModalOpen(true); }}
-                          className="p-2 hover:bg-slate-100 rounded-xl text-blue-600 transition-colors"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteSubject(subject.id)}
-                          className="p-2 hover:bg-slate-100 rounded-xl text-rose-600 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+              <div className="grid grid-cols-1 gap-4">
+                {courseSubjects.map((subject, index) => (
+                  <div key={subject.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-primary/30 transition-all group">
+                    <div className="flex flex-col gap-1">
+                      <button 
+                        disabled={index === 0}
+                        onClick={() => moveSubject(subject, 'up')}
+                        className={`p-1.5 rounded-lg transition-colors ${index === 0 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-white hover:text-primary'}`}
+                      >
+                        <ChevronUp size={16} />
+                      </button>
+                      <button 
+                        disabled={index === courseSubjects.length - 1}
+                        onClick={() => moveSubject(subject, 'down')}
+                        className={`p-1.5 rounded-lg transition-colors ${index === courseSubjects.length - 1 ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:bg-white hover:text-primary'}`}
+                      >
+                        <ChevronDown size={16} />
+                      </button>
                     </div>
-                    <h4 className="font-bold text-slate-800 text-lg mb-2 group-hover:text-primary transition-colors">{subject.name}</h4>
-                    <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">{subject.description || 'Sem descrição técnica.'}</p>
+
+                    <div className="p-3 bg-white border border-slate-200 rounded-xl text-primary shadow-sm shrink-0">
+                      <Layers size={20} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-800 text-lg mb-1 group-hover:text-primary transition-colors truncate">
+                        {index + 1}. {subject.name}
+                      </h4>
+                      <p className="text-sm text-slate-500 line-clamp-1">{subject.description || 'Sem descrição técnica.'}</p>
+                    </div>
+
+                    <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+                      <button 
+                        onClick={() => duplicateSubject(subject)}
+                        className="p-2 hover:bg-white rounded-xl text-slate-500 transition-colors"
+                        title="Duplicar Disciplina"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button 
+                        onClick={() => { setEditingSubject(subject); setSubjectForm({ name: subject.name, description: subject.description || '', courseId: subject.courseId }); setIsSubjectModalOpen(true); }}
+                        className="p-2 hover:bg-white rounded-xl text-blue-600 transition-colors"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteSubject(subject.id)}
+                        className="p-2 hover:bg-white rounded-xl text-rose-600 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {courseSubjects.length === 0 && (

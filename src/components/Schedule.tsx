@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  BookOpen
+  BookOpen,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -138,6 +139,17 @@ export default function Schedule({
     setIsModalOpen(true);
   };
 
+  const duplicateClass = (cls: Class) => {
+    setEditingClass(null);
+    setFormData({
+      subjectId: cls.subjectId,
+      date: cls.date, // Keeping same date for easy adjustment
+      content: cls.content || '',
+      status: 'planned'
+    });
+    setIsModalOpen(true);
+  };
+
   const getSubjectName = (id: string) => subjects.find(s => s.id === id)?.name || 'N/A';
 
   const weekDays = eachDayOfInterval({
@@ -248,6 +260,13 @@ export default function Schedule({
                 className="corporate-card group relative overflow-hidden bg-white shadow-sm border-slate-200"
               >
                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => duplicateClass(cls)}
+                    className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 transition-colors"
+                    title="Duplicar Aula"
+                  >
+                    <Copy size={16} />
+                  </button>
                   <button 
                     onClick={() => openEditModal(cls)}
                     className="p-2 hover:bg-slate-50 rounded-xl text-blue-600 transition-colors"

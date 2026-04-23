@@ -11,6 +11,7 @@ export interface Subject {
   name: string;
   description?: string;
   instructorId?: string;
+  order?: number;
 }
 
 export interface Student {

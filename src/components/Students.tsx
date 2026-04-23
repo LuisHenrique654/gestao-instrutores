@@ -18,7 +18,8 @@ import {
   Upload,
   Loader2,
   CreditCard,
-  Calendar
+  Calendar,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db, auth } from '../firebase';
@@ -162,6 +163,22 @@ export default function Students({
     setIsModalOpen(true);
   };
 
+  const duplicateStudent = (student: Student) => {
+    setEditingStudent(null); // Ensure it creates a new record
+    setFormData({
+      name: `${student.name} (Cópia)`,
+      email: student.email || '',
+      phone: student.phone || '',
+      cpf: student.cpf || '',
+      rg: student.rg || '',
+      birthDate: student.birthDate || '',
+      photoUrl: student.photoUrl || '',
+      courseIds: student.courseIds || [],
+      documents: (student as any).documents || []
+    });
+    setIsModalOpen(true);
+  };
+
   const addDocument = () => {
     if (newDoc.name && newDoc.url) {
       setFormData({
@@ -251,6 +268,13 @@ export default function Students({
                   </div>
                 </div>
                 <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => duplicateStudent(student)}
+                    className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors"
+                    title="Duplicar Aluno"
+                  >
+                    <Copy size={16} />
+                  </button>
                   <button 
                     onClick={() => openEditModal(student)}
                     className="p-2 hover:bg-slate-100 rounded-xl text-blue-600 transition-colors"
