@@ -47,23 +47,24 @@ export default function App() {
       setUser(user);
       
       if (user) {
-        // Load user role
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-        } else {
-          // Default role if not found
-          const role = user.email?.toLowerCase() === 'luis.hen1403@gmail.com' ? 'admin' : 'instructor';
-          setUserRole(role);
-          // Create user doc if it doesn't exist
-          await setDoc(doc(db, 'users', user.uid), {
-            email: user.email,
-            role: role,
-            name: user.displayName
-          });
-        }
+        // Load user role with onSnapshot instead of getDoc for better offline behavior
+        const unsubRole = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            setUserRole(docSnap.data().role);
+          } else {
+            // Default role if doc not created yet
+            const role = user.email?.toLowerCase() === 'luis.hen1403@gmail.com' ? 'admin' : 'instructor';
+            setUserRole(role);
+          }
+          // Complete loading when we have the role
+          setLoading(false);
+        }, (error) => {
+          console.error("User Role Snapshot Error:", error);
+          // If it fails (e.g. permission or unexpected error), at least let them in if they are authenticated
+          setLoading(false);
+        });
 
-        // Load global settings (logo, name)
+        // Load global settings
         const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
@@ -75,17 +76,35 @@ export default function App() {
         }, (error) => {
           console.error("Global Settings Snapshot Error:", error);
         });
-        setLoading(false);
-        return () => unsubSettings();
+        
+        return () => {
+          unsubRole();
+          unsubSettings();
+        };
       } else {
         setLoading(false);
       }
     });
-    return () => unsubscribe();
+
+    // Check online status
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
   }, []);
+
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOnline) {
+      setLoginError("Você está offline. O login inicial requer internet para validar sua senha. Se você já entrou antes, tente recarregar a página para restaurar sua sessão salva.");
+      return;
+    }
     setLoginError(null);
     setIsAuthProcessing(true);
     try {
@@ -212,6 +231,12 @@ export default function App() {
             </div>
 
             <form onSubmit={loginMode === 'login' ? handleLogin : handleSignup} className="space-y-4 text-left">
+              {!isOnline && loginMode === 'login' && (
+                <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-[10px] text-amber-800 font-bold uppercase tracking-tight flex items-center gap-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                  Modo Offline Ativo: Acesse apenas sessões salvas.
+                </div>
+              )}
               {loginMode === 'signup' && (
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
